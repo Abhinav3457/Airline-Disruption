@@ -44,5 +44,121 @@
     ],
     "escalation": null,
     "timestamp": "2026-09-18T07:57:16.900Z"
+  },
+  {
+    "id": "a829d4da-ad9a-4f5d-af7c-6b9f5dbc4025",
+    "pnr": "WL7742",
+    "customer": "Meher Kaur",
+    "intent": "delay_compensation",
+    "policyUsed": [
+      "Supplied Service Rules - Delay Compensation Rule"
+    ],
+    "decision": "[eligible] Delay exceeds 5 hours: meal voucher, lounge access, and hotel for the delayed hours only.",
+    "actions": [
+      "issue_meal_voucher:completed",
+      "issue_lounge_access:completed",
+      "arrange_delayed_hours_hotel:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T07:59:58.199Z"
+  },
+  {
+    "id": "f8223c94-009a-4e7a-bc13-f753ee15af4f",
+    "pnr": "WL7742",
+    "customer": "Meher Kaur",
+    "intent": "unknown",
+    "policyUsed": [],
+    "decision": "[clarification_required] Request could not be classified; asking the customer for clarification.",
+    "actions": [],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:00:18.940Z"
+  },
+  {
+    "id": "935367bf-6076-420b-9818-73df4dbeea36",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "cancellation_support",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Loyalty Rule"
+    ],
+    "decision": "[eligible] Airline-caused cancellation: free rebooking within 24 hours or a full refund.",
+    "actions": [],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:01:27.070Z"
+  },
+  {
+    "id": "6d168348-1cb3-4e47-8384-3637d06a4ac5",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "refund_request",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Refund Rule"
+    ],
+    "decision": "[eligible] Full refund to the original payment method within 7 business days.",
+    "actions": [
+      "initiate_refund:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:01:43.492Z"
+  },
+  {
+    "id": "3edbce3d-802b-4b35-8d8f-ce4922635d7b",
+    "pnr": "TR1190B",
+    "customer": "Arvind Kulkarni",
+    "intent": "delay_compensation",
+    "policyUsed": [
+      "Supplied Service Rules - Delay Compensation Rule"
+    ],
+    "decision": "[eligible] Delay exceeds 3 hours: meal voucher and lounge access.",
+    "actions": [
+      "issue_meal_voucher:completed",
+      "issue_lounge_access:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:02:51.291Z"
+  },
+  {
+    "id": "35e62ec5-03e1-4f35-a936-cd2c7958f0b5",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "cancellation_support",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Loyalty Rule"
+    ],
+    "decision": "[eligible] Airline-caused cancellation: free rebooking within 24 hours or a full refund.",
+    "actions": [],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:03:53.397Z"
+  },
+  {
+    "id": "bdcfd984-f5f2-486f-9aad-d438c5c97994",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "refund_request",
+    "policyUsed": [
+      "Supplied Service Rules - Refund Rule",
+      "Supplied Service Rules - Prohibited Actions"
+    ],
+    "decision": "[escalation_required] Refunds must go to the original payment method only.",
+    "actions": [],
+    "escalation": "Refund to a payment method other than the original is prohibited for agents.",
+    "timestamp": "2026-09-18T08:03:58.986Z"
+  },
+  {
+    "id": "a8d1406a-b990-4e9e-bc6c-a695a39db69d",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "cancellation_support",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Loyalty Rule"
+    ],
+    "decision": "[eligible] Airline-caused cancellation: free rebooking within 24 hours or a full refund.",
+    "actions": [],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:04:22.355Z"
   }
 ]
