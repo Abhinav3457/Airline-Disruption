@@ -19,7 +19,7 @@ import type {
 import { getPolicies } from '../data/store';
 
 /** Source labels identify where each rule comes from, per the assignment. */
-const SOURCES = {
+export const POLICY_SOURCES = {
   cancellation: 'Supplied Service Rules - Cancellation Rule',
   delay: 'Supplied Service Rules - Delay Compensation Rule',
   refund: 'Supplied Service Rules - Refund Rule',
@@ -64,40 +64,40 @@ export function getAllPolicies(): AllPolicies {
 export function getCancellationPolicy(): PolicyEnvelope<CancellationPolicy> {
   return envelope(
     POLICY_IDS.cancellation,
-    SOURCES.cancellation,
+    POLICY_SOURCES.cancellation,
     getPolicies().cancellation
   );
 }
 
 /** Delay compensation bands: <3h, >3h, >5h (cumulative entitlements). */
 export function getDelayCompensationPolicy(): PolicyEnvelope<DelayPolicy> {
-  return envelope(POLICY_IDS.delay, SOURCES.delay, getPolicies().delay);
+  return envelope(POLICY_IDS.delay, POLICY_SOURCES.delay, getPolicies().delay);
 }
 
 /** Refund: full refund, 7 business days, original payment method only. */
 export function getRefundPolicy(): PolicyEnvelope<RefundPolicy> {
-  return envelope(POLICY_IDS.refund, SOURCES.refund, getPolicies().refund);
+  return envelope(POLICY_IDS.refund, POLICY_SOURCES.refund, getPolicies().refund);
 }
 
 /** Fare difference: customer pays; waiver above ₹1,500 needs supervisor approval. */
 export function getFareDifferencePolicy(): PolicyEnvelope<FareDifferencePolicy> {
   return envelope(
     POLICY_IDS.fareDifference,
-    SOURCES.fareDifference,
+    POLICY_SOURCES.fareDifference,
     getPolicies().fareDifference
   );
 }
 
 /** Loyalty: priority rebooking for Gold/Platinum; no extra compensation. */
 export function getLoyaltyPolicy(): PolicyEnvelope<LoyaltyPolicy> {
-  return envelope(POLICY_IDS.loyalty, SOURCES.loyalty, getPolicies().loyalty);
+  return envelope(POLICY_IDS.loyalty, POLICY_SOURCES.loyalty, getPolicies().loyalty);
 }
 
 /** The six actions the agent is allowed to take, with stable ids. */
 export function getAllowedActions(): PolicyEnvelope<AllowedAction[]> {
   return envelope(
     POLICY_IDS.allowedActions,
-    SOURCES.allowedActions,
+    POLICY_SOURCES.allowedActions,
     getPolicies().allowedActions
   );
 }
@@ -106,7 +106,7 @@ export function getAllowedActions(): PolicyEnvelope<AllowedAction[]> {
 export function getProhibitedActions(): PolicyEnvelope<string[]> {
   return envelope(
     POLICY_IDS.prohibited,
-    SOURCES.prohibited,
+    POLICY_SOURCES.prohibited,
     getPolicies().prohibited
   );
 }

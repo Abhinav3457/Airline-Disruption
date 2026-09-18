@@ -47,6 +47,7 @@ npm start
 | `npm run typecheck`  | Typecheck without emitting                     |
 | `npm run verify:data`     | Validate seed data against schemas & fixtures  |
 | `npm run verify:services` | Exercise all service functions against fixtures |
+| `npm run verify:engine`    | Test the deterministic policy engine & boundaries   |
 
 ## Services
 
@@ -103,6 +104,7 @@ server/
 │   │   ├── booking.service.ts   # leg lookups, disruption & status summaries
 │   │   └── policy.service.ts    # policy envelopes { policyId, source, details }
 │   ├── agents/        # LLM agent logic (Groq) (TODO)
+│   │   └── policy.engine.ts     # deterministic eligibility decisions
 │   ├── controllers/   # Request handlers
 │   ├── routes/        # Express routers
 │   ├── middleware/    # Custom middleware (TODO)
@@ -131,6 +133,20 @@ Verify the data layer any time with:
 ```bash
 npm run verify:data
 ```
+
+## Policy Engine (`src/agents/policy.engine.ts`)
+
+Deterministic eligibility decisions from the supplied rules — **the LLM never
+decides policy**. Eight evaluators cover cancellation, delay compensation,
+refund, fare difference, loyalty, action authorization, and escalation, each
+returning `{ status, eligibleActions, ineligibleActions, requiresEscalation,
+escalationReason, policySources, explanation }`.
+
+Enforced boundaries: exactly 3h is *not* "more than 3" (voucher only); exactly
+5h is *not* "more than 5" (no hotel); hotel is for delayed hours only; a waiver
+of exactly ₹1,500 is allowed while anything above needs supervisor approval;
+non-original refund methods are escalated; non-airline-caused disruptions get
+no exceptions; flight rebooking details are never invented.
 
 ## Roadmap (not yet implemented)
 
