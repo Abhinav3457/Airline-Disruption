@@ -24,8 +24,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    /* Paths */
-    "baseUrl": ".",
+    /* Paths (relative to this tsconfig; no baseUrl needed in TS 6) */
     "paths": {
       "@/*": ["./src/*"]
     }
