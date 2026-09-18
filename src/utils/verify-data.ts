@@ -45,8 +45,8 @@ try {
   check('bookings.json matches Booking[] schema (discriminated union)', true);
   check('policies.json matches PolicyDocument schema', true);
   check(
-    'action-logs.json matches ActionLog[] schema (seed: empty)',
-    actionLogs.length === 0
+    'action-logs.json matches ActionLog[] schema (seed starts empty; runtime appends)',
+    Array.isArray(actionLogs)
   );
 } catch (err) {
   failures += 1;

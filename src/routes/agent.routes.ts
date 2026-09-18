@@ -5,12 +5,14 @@ import {
   postAgentChat,
 } from '../controllers/agent.controller';
 
+import { asyncHandler } from '../middleware/error.middleware';
+
 const router = Router();
 
-// POST /api/agent/chat — main conversation entry point
-router.post('/chat', postAgentChat);
-
-// GET /api/agent — agent metadata
+// GET /api/agent — agent metadata (LLM availability, model, endpoints)
 router.get('/', getAgentMeta);
+
+// POST /api/agent/chat — main conversation entry point
+router.post('/chat', asyncHandler(postAgentChat));
 
 export default router;

@@ -50,6 +50,7 @@ npm start
 | `npm run verify:engine`    | Test the deterministic policy engine & boundaries   |
 | `npm run verify:agents`    | Test intent, executor, escalation, audit modules    |
 | `npm run verify:chat`      | Test the full agent pipeline (LLM disabled)         |
+| `npm run verify:api`       | Full HTTP test matrix (all endpoints + errors)      |
 
 ## Services
 
@@ -176,6 +177,27 @@ no exceptions; flight rebooking details are never invented.
 - **audit.service** — `createAuditRecord` / `getAuditRecordsByPnr` /
   `getAllAuditRecords`, zod-validated, persisted to `src/data/audit-logs.json`.
 
+## API Endpoints
+
+| Method | Endpoint                  | Description                                    |
+| ------ | ------------------------- | ---------------------------------------------- |
+| GET    | `/api/health`             | Liveness probe                                 |
+| GET    | `/api/customers`          | All customers                                  |
+| GET    | `/api/customers/:pnr`     | Customer profile + booking legs                |
+| GET    | `/api/bookings/:pnr`      | Booking legs for a PNR                         |
+| GET    | `/api/bookings/:pnr/status` | Legs + primary disruption summary            |
+| GET    | `/api/policies`           | All policy envelopes (`policyId/source/details`)|
+| POST   | `/api/agent/chat`         | One agent turn (full pipeline)                 |
+| GET    | `/api/agent`              | Agent metadata (LLM availability, model)       |
+| GET    | `/api/audit`              | All audit records (`?pnr=` filter optional)    |
+| GET    | `/api/audit/:pnr`         | Audit records for one PNR                      |
+| POST   | `/api/actions/execute`    | Policy-gated simulated action execution        |
+| POST   | `/api/escalations`        | Create a human escalation                      |
+
+All responses use the envelope `{ success: boolean, data?..., error?: { code, message, issues? } }`.
+Errors: 400 validation (zod, field-level issues), 404 not found, 500 internal
+(no stack traces). Error middleware is centralized in `src/middleware/error.middleware.ts`.
+
 ## Agent Chat API
 
 ```
@@ -197,8 +219,33 @@ automatically falls back to deterministic replies; the three mandatory
 scenarios work with or without a key. Set `LLM_DISABLED=1` to force fallback
 mode. `GET /api/agent` reports LLM availability and model.
 
+## Example curl
+
+```bash
+# Health
+curl http://localhost:5000/api/health
+
+# Chat: Arvind's 4-hour delay
+curl -X POST http://localhost:5000/api/agent/chat \
+  -H "Content-Type: application/json" \
+  -d '{"pnr":"TR1190B","message":"My flight is delayed 4 hours and I need a hotel"}'
+
+# Chat: Meher's 6-hour delay + waiver (escalates)
+curl -X POST http://localhost:5000/api/agent/chat \
+  -H "Content-Type: application/json" \
+  -d '{"pnr":"WL7742","message":"My flight is delayed 6 hours. Give me a full-night hotel and waive the Rs2000 fare difference."}'
+
+# Policy-gated simulated action
+curl -X POST http://localhost:5000/api/actions/execute \
+  -H "Content-Type: application/json" \
+  -d '{"pnr":"WL7742","action":"arrange_delayed_hours_hotel","reason":"6h delay entitlement"}'
+
+# Audit trail
+curl http://localhost:5000/api/audit/WL7742
+```
+
 ## Roadmap (not yet implemented)
 
-- Agent service backed by the Groq SDK
-- Middleware for error handling & request IDs
-- Conversation/session management
+- Conversation/session persistence across turns
+- Request-ID middleware & structured logging
+- Real (non-simulated) action execution backends
