@@ -39,12 +39,13 @@ npm start
 
 ## Scripts
 
-| Script              | Description                      |
-| ------------------- | -------------------------------- |
-| `npm run dev`       | Dev server with watch mode (tsx) |
-| `npm run build`     | Compile TypeScript to `dist/`    |
-| `npm start`         | Run compiled server from `dist/` |
-| `npm run typecheck` | Typecheck without emitting       |
+| Script               | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `npm run dev`        | Dev server with watch mode (tsx)               |
+| `npm run build`      | Compile TypeScript to `dist/` + copy seed data |
+| `npm start`          | Run compiled server from `dist/`               |
+| `npm run typecheck`  | Typecheck without emitting                     |
+| `npm run verify:data`| Validate seed data against schemas & fixtures  |
 
 ## API Endpoints
 
@@ -76,16 +77,24 @@ server/
 │   ├── config/        # Environment config & constants
 │   │   ├── env.ts
 │   │   └── constants.ts
-│   ├── data/          # Mock/static data (bookings, flights, policies)
-│   ├── types/         # Shared TypeScript types
-│   ├── services/      # Business logic
-│   ├── agents/        # LLM agent logic (Groq)
+│   ├── data/          # Seed data + schemas + typed store
+│   │   ├── customers.json    # 3 customers
+│   │   ├── bookings.json     # 4 bookings
+│   │   ├── policies.json     # cancellation/delay/refund/fare/loyalty rules
+│   │   ├── action-logs.json  # runtime audit trail (starts empty)
+│   │   ├── schemas.ts        # zod schemas pinned to domain types
+│   │   └── store.ts          # typed loaders + PNR lookups
+│   ├── types/         # Shared TypeScript types (customer/booking/policy/action/agent)
+│   ├── services/      # Business logic (TODO)
+│   ├── agents/        # LLM agent logic (Groq) (TODO)
 │   ├── controllers/   # Request handlers
 │   ├── routes/        # Express routers
-│   ├── middleware/    # Custom middleware
-│   ├── utils/         # Helpers
+│   ├── middleware/    # Custom middleware (TODO)
+│   ├── utils/         # Helpers (verify-data.ts)
 │   ├── app.ts         # Express app setup
 │   └── server.ts      # HTTP server bootstrap
+├── scripts/
+│   └── copy-data.js   # copies seed JSON to dist/ on build
 ├── .env
 ├── .env.example
 ├── .gitignore
@@ -94,9 +103,21 @@ server/
 └── README.md
 ```
 
+## Data Layer
+
+Seed data lives in `src/data/*.json` and is validated with zod at load time
+(`src/data/schemas.ts`), with types in `src/types/`. Customers are keyed by
+PNR; bookings link to customers via `pnr`. Bookings are a discriminated union
+on `status` (`Cancelled | Delayed | Unaffected`).
+
+Verify the data layer any time with:
+
+```bash
+npm run verify:data
+```
+
 ## Roadmap (not yet implemented)
 
 - Agent service backed by the Groq SDK
-- Booking/flight data layer
 - Middleware for error handling & request IDs
 - Conversation/session management

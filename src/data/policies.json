@@ -1,0 +1,56 @@
+{
+  "cancellation": {
+    "options": [
+      "Free rebooking on next available flight within 24 hours",
+      "Full refund"
+    ]
+  },
+  "delay": {
+    "tiers": [
+      {
+        "condition": "Under 3 hours",
+        "upToHours": 3,
+        "entitlements": ["₹500 meal voucher"]
+      },
+      {
+        "condition": "More than 3 hours",
+        "moreThanHours": 3,
+        "entitlements": ["Meal voucher", "Lounge access"]
+      },
+      {
+        "condition": "More than 5 hours",
+        "moreThanHours": 5,
+        "entitlements": ["Meal voucher", "Lounge access", "Hotel accommodation for delayed hours only"]
+      }
+    ]
+  },
+  "refund": {
+    "type": "Full refund",
+    "timeframe": "Within 7 business days",
+    "method": "Original payment method only"
+  },
+  "fareDifference": {
+    "rule": "Voluntary higher-fare flight requires customer to pay fare difference",
+    "maxWaiverWithoutApprovalInr": 1500,
+    "approvalRule": "Fare difference above ₹1,500 cannot be waived without supervisor approval"
+  },
+  "loyalty": {
+    "priorityRebookingTiers": ["Gold", "Platinum"],
+    "additionalCompensation": "No additional compensation beyond standard policy"
+  },
+  "allowedActions": [
+    { "id": "rebook_within_24_hours", "action": "Rebook within 24 hours for airline-caused cancellation" },
+    { "id": "issue_meal_voucher", "action": "Issue meal voucher" },
+    { "id": "issue_lounge_access", "action": "Issue lounge access" },
+    { "id": "arrange_delayed_hours_hotel", "action": "Arrange delayed-hours hotel" },
+    { "id": "initiate_refund", "action": "Initiate refund" },
+    { "id": "provide_booking_status", "action": "Provide booking status" }
+  ],
+  "prohibited": [
+    "Compensation beyond policy",
+    "Waiving fare difference above ₹1,500",
+    "Exceptions for non-airline-caused disruptions",
+    "Legal/formal complaint handling without escalation",
+    "Refund to different payment method"
+  ]
+}

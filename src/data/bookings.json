@@ -1,0 +1,39 @@
+[
+  {
+    "pnr": "SK4821X",
+    "flight": "SK-204",
+    "route": { "from": "Delhi", "to": "Goa" },
+    "date": "2026-09-23",
+    "scheduledDeparture": "18:40",
+    "status": "Cancelled",
+    "cancellationReason": "Operational reasons"
+  },
+  {
+    "pnr": "SK4821X",
+    "flight": "Return",
+    "route": { "from": "Goa", "to": "Delhi" },
+    "date": "2026-09-25",
+    "scheduledDeparture": "16:20",
+    "status": "Unaffected"
+  },
+  {
+    "pnr": "TR1190B",
+    "flight": "SK-118",
+    "route": { "from": "Mumbai", "to": "Bengaluru" },
+    "date": "2026-09-23",
+    "scheduledDeparture": "07:10",
+    "status": "Delayed",
+    "delayHours": 4,
+    "newDeparture": "11:10"
+  },
+  {
+    "pnr": "WL7742",
+    "flight": "SK-305",
+    "route": { "from": "Delhi", "to": "Hyderabad" },
+    "date": "2026-09-23",
+    "scheduledDeparture": "14:00",
+    "status": "Delayed",
+    "delayHours": 6,
+    "newDeparture": "20:00"
+  }
+]
