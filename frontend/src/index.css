@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/*
+ * Dark airline operations theme.
+ * Charcoal/matte surfaces, subtle borders, restrained accents.
+ * No global animations by design — the dashboard stays calm.
+ */
+@theme {
+  /* Surfaces (charcoal / matte) */
+  --color-ops-950: #0b0e13; /* page background */
+  --color-ops-900: #11151c; /* sidebar / header */
+  --color-ops-850: #161b24; /* card background */
+  --color-ops-800: #1c222d; /* elevated / hover */
+  --color-ops-700: #2a323f; /* borders strong */
+
+  /* Borders (subtle) */
+  --color-ops-line: #232a35;
+
+  /* Text */
+  --color-ops-text: #e6e9ee;
+  --color-ops-muted: #8b94a3;
+  --color-ops-faint: #5d6674;
+
+  /* Accents */
+  --color-ops-accent: #3b82f6; /* primary blue */
+  --color-ops-ok: #22c55e; /* eligible / completed */
+  --color-ops-warn: #f59e0b; /* delayed / medium */
+  --color-ops-bad: #ef4444; /* cancelled / high */
+  --color-ops-escalate: #a855f7; /* escalation */
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ops-950 text-ops-text antialiased;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Thin, unobtrusive scrollbars to match the ops aesthetic */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ops-700) transparent;
+}
