@@ -77,10 +77,10 @@ export function DashboardPage() {
           <CardHeader title="Quick actions" />
           <CardBody className="space-y-2">
             <Link
-              to="/chat"
+              to="/agent"
               className="flex items-center justify-between rounded-md border border-ops-line bg-ops-800/50 px-4 py-3 text-sm transition-colors hover:bg-ops-800"
             >
-              <span>Open Agent Chat</span>
+              <span>Open Customer Agent</span>
               <ArrowRight className="h-4 w-4 text-ops-muted" aria-hidden />
             </Link>
             <Link

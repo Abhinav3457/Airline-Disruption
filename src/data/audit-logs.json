@@ -1,1 +1,48 @@
-[]
+[
+  {
+    "id": "fc5f93c0-3bba-49a2-836e-f714c363e7e0",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "cancellation_support",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Loyalty Rule"
+    ],
+    "decision": "[eligible] Airline-caused cancellation: free rebooking within 24 hours or a full refund.",
+    "actions": [],
+    "escalation": null,
+    "timestamp": "2026-09-18T07:56:29.158Z"
+  },
+  {
+    "id": "85c62e26-4903-49eb-b064-5db2062d5a6b",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "refund_request",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Refund Rule"
+    ],
+    "decision": "[eligible] Full refund to the original payment method within 7 business days.",
+    "actions": [
+      "initiate_refund:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T07:57:02.641Z"
+  },
+  {
+    "id": "3f77a714-126c-4022-81c3-7c5b363c3abd",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "rebooking_request",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Loyalty Rule"
+    ],
+    "decision": "[eligible] Free rebooking on the next available flight within 24 hours.",
+    "actions": [
+      "request_rebooking:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T07:57:16.900Z"
+  }
+]

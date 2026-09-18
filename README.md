@@ -457,12 +457,13 @@ VITE_API_BASE_URL=http://localhost:5000/api
 | Route | Purpose |
 |---|---|
 | `/` | Dashboard — API status, dataset counts, rule highlights, quick actions |
+| `/agent` | **Customer Agent** — customer selector (loads from `GET /api/customers`), full booking context (name, tier, PNR, contact, flight, route, date, scheduled/updated departure, disruption status, previous complaints), chat thread, policy decision + executed actions + escalation panels |
 | `/customers` | Customer register → `/customers/:pnr` profile with booking legs |
-| `/chat` | Agent chat — PNR + message, conversation thread, policy decision, executed actions, escalation panel |
+| `/bookings` | All booking legs across the register with disruption details |
 | `/policies` | All 7 policy categories exactly as served by the backend |
-| `/audit` | Full audit trail with optional PNR filter |
+| `/audit` | Audit Logs — full trail with optional PNR filter |
 
-The header pill probes `GET /api/health` every 30 s: **API healthy / Backend offline / Checking…**
+Layout: **AeroResolve** sidebar (Dashboard, Customer Agent, Customers, Bookings, Policies, Audit Logs; collapses to a drawer on mobile) and a header with the page title, backend connection status (probes `GET /api/health` every 30 s), and the current operator status. The selected customer stays in Agent-page state while the operator converses; deep-link with `/agent?pnr=WL7742` to preselect.
 
 ## Verified
 

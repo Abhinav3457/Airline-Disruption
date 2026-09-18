@@ -41,7 +41,7 @@ export function AuditLogsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Audit Trail</h1>
+        <h2 className="text-lg font-semibold">Audit Logs</h2>
         <p className="mt-1 text-sm text-ops-muted">
           Every agent interaction: what was asked, which policies applied, the
           decision, executed actions, and escalations.

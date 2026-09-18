@@ -148,10 +148,10 @@ export function CustomerDetailPage() {
             <p className="text-xs text-ops-faint">
               Tip: open{' '}
               <Link
-                to={`/chat?pnr=${data.pnr}`}
+                to={`/agent?pnr=${data.pnr}`}
                 className="text-ops-accent hover:underline"
               >
-                Agent Chat
+                Customer Agent
               </Link>{' '}
               pre-loaded with PNR {data.pnr} to handle this customer's
               disruption.

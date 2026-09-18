@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   Clock,
@@ -25,7 +26,7 @@ import {
 import { useApi, useToasts } from '@/hooks';
 import { getCustomerByPnr, getCustomers, postAgentChat } from '@/services';
 import type { Booking, ChatData, CustomerProfile } from '@/types';
-import { formatDate, humanizeIntent } from '@/utils';
+import { formatDate } from '@/utils';
 
 interface ChatMessage {
   id: number;
@@ -171,7 +172,10 @@ function CustomerContext({ profile }: { profile: CustomerProfile }) {
 
 export function AgentPage() {
   const customers = useApi(() => getCustomers(), 'agent-customers');
-  const [selectedPnr, setSelectedPnr] = useState<string>('');
+  const [searchParams] = useSearchParams();
+  const [selectedPnr, setSelectedPnr] = useState<string>(
+    searchParams.get('pnr') ?? ''
+  );
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);

@@ -113,7 +113,8 @@ export function DecisionPanels({ data }: { data: ChatData }) {
               <code className="text-purple-400">{data.escalation.trigger}</code>
             </p>
           </CardBody>
-      </Card>
+        </Card>
+      ) : null}
     </div>
   );
 }
