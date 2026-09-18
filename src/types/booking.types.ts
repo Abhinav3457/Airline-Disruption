@@ -41,3 +41,37 @@ export interface UnaffectedBooking extends BookingBase {
 }
 
 export type Booking = CancelledBooking | DelayedBooking | UnaffectedBooking;
+
+/** A booking leg that is either cancelled or delayed. */
+export type DisruptedBooking = CancelledBooking | DelayedBooking;
+
+/** Compact per-leg status view used by booking-status summaries. */
+export interface BookingLegStatus {
+  flight: string;
+  route: Route;
+  date: string;
+  scheduledDeparture: string;
+  status: BookingStatus;
+}
+
+/** The single most disruptive leg for a PNR, if any. */
+export interface DisruptionSummary {
+  kind: 'cancellation' | 'delay';
+  flight: string;
+  date: string;
+  scheduledDeparture: string;
+  /** Present when kind === 'delay'. */
+  delayHours?: number;
+  /** Present when kind === 'cancellation'. */
+  cancellationReason?: string;
+}
+
+/** Structured status answer for a PNR (all legs + primary disruption). */
+export interface BookingStatusSummary {
+  pnr: string;
+  totalLegs: number;
+  legs: BookingLegStatus[];
+  hasDisruption: boolean;
+  /** Cancellation takes precedence over delay; null when nothing is disrupted. */
+  primaryDisruption: DisruptionSummary | null;
+}

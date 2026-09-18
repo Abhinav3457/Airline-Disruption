@@ -73,3 +73,24 @@ export interface PolicyDocument {
   allowedActions: AllowedAction[];
   prohibited: string[];
 }
+
+/**
+ * Standard envelope the policy service returns: a stable id, a human-readable
+ * source label, and the structured policy details.
+ */
+export interface PolicyEnvelope<TDetails = unknown> {
+  policyId: string;
+  source: string;
+  details: TDetails;
+}
+
+/** Every policy category, each in its own envelope (policy service view). */
+export interface AllPolicies {
+  cancellation: PolicyEnvelope<CancellationPolicy>;
+  delay: PolicyEnvelope<DelayPolicy>;
+  refund: PolicyEnvelope<RefundPolicy>;
+  fareDifference: PolicyEnvelope<FareDifferencePolicy>;
+  loyalty: PolicyEnvelope<LoyaltyPolicy>;
+  allowedActions: PolicyEnvelope<AllowedAction[]>;
+  prohibited: PolicyEnvelope<string[]>;
+}

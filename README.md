@@ -45,7 +45,20 @@ npm start
 | `npm run build`      | Compile TypeScript to `dist/` + copy seed data |
 | `npm start`          | Run compiled server from `dist/`               |
 | `npm run typecheck`  | Typecheck without emitting                     |
-| `npm run verify:data`| Validate seed data against schemas & fixtures  |
+| `npm run verify:data`     | Validate seed data against schemas & fixtures  |
+| `npm run verify:services` | Exercise all service functions against fixtures |
+
+## Services
+
+- **customer.service** — `getAllCustomers`, `getCustomerByPnr` (case-insensitive),
+  `getCustomerByName`, `getCustomerProfile` (customer + booking legs). Not-found
+  lookups return `undefined`.
+- **booking.service** — `getBookingsByPnr`, `getBookingByFlightNumber`,
+  `getPrimaryDisruptedBooking` (cancellation outranks delay; longest delay wins),
+  `getBookingStatus` (all legs + primary disruption summary).
+- **policy.service** — every rule returned as `{ policyId, source, details }`,
+  e.g. `delay_compensation` / `Supplied Service Rules - Delay Compensation Rule`.
+  No rules are invented; the service only labels and exposes validated policy data.
 
 ## API Endpoints
 
@@ -85,7 +98,10 @@ server/
 │   │   ├── schemas.ts        # zod schemas pinned to domain types
 │   │   └── store.ts          # typed loaders + PNR lookups
 │   ├── types/         # Shared TypeScript types (customer/booking/policy/action/agent)
-│   ├── services/      # Business logic (TODO)
+│   ├── services/      # Business logic
+│   │   ├── customer.service.ts  # PNR/name lookups, enriched profiles
+│   │   ├── booking.service.ts   # leg lookups, disruption & status summaries
+│   │   └── policy.service.ts    # policy envelopes { policyId, source, details }
 │   ├── agents/        # LLM agent logic (Groq) (TODO)
 │   ├── controllers/   # Request handlers
 │   ├── routes/        # Express routers

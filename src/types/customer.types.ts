@@ -3,6 +3,8 @@
  * Field values mirror the assignment data exactly (names, PNRs, phone masks, etc.).
  */
 
+import type { Booking } from './booking.types';
+
 export const LOYALTY_TIERS = ['Silver', 'Gold', 'Platinum'] as const;
 
 export type LoyaltyTier = (typeof LOYALTY_TIERS)[number];
@@ -27,4 +29,9 @@ export interface Customer {
   travelHistory: TravelHistory;
   /** Empty array means no previous complaints. */
   previousComplaints: PreviousComplaint[];
+}
+
+/** A customer enriched with all of their booking legs (service-layer view). */
+export interface CustomerProfile extends Customer {
+  bookings: Booking[];
 }

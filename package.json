@@ -8,7 +8,8 @@
     "build": "tsc && node scripts/copy-data.js",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "verify:data": "tsx src/utils/verify-data.ts"
+    "verify:data": "tsx src/utils/verify-data.ts",
+    "verify:services": "tsx src/utils/verify-services.ts"
   },
   "keywords": [
     "airline",
