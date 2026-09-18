@@ -446,5 +446,69 @@
     ],
     "escalation": "Fare-difference waiver above ₹1,500 requires supervisor approval.",
     "timestamp": "2026-09-18T08:13:39.972Z"
+  },
+  {
+    "id": "39951d5b-f18f-4ec9-bcac-dfee54532d9a",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "refund_request",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Refund Rule"
+    ],
+    "decision": "[eligible] Full refund to the original payment method within 7 business days.",
+    "actions": [
+      "initiate_refund:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:18:23.235Z"
+  },
+  {
+    "id": "c4949a14-9991-4f3f-bd92-16029b689ebd",
+    "pnr": "TR1190B",
+    "customer": "Arvind Kulkarni",
+    "intent": "hotel_request",
+    "policyUsed": [
+      "Supplied Service Rules - Delay Compensation Rule"
+    ],
+    "decision": "[eligible] Delay exceeds 3 hours: meal voucher and lounge access.",
+    "actions": [
+      "issue_meal_voucher:completed",
+      "issue_lounge_access:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:19:50.784Z"
+  },
+  {
+    "id": "1446088b-a6c7-4415-b1a8-3d32d38a08bb",
+    "pnr": "TR1190B",
+    "customer": "Arvind Kulkarni",
+    "intent": "hotel_request",
+    "policyUsed": [
+      "Supplied Service Rules - Delay Compensation Rule"
+    ],
+    "decision": "[eligible] Delay exceeds 3 hours: meal voucher and lounge access.",
+    "actions": [
+      "issue_meal_voucher:completed",
+      "issue_lounge_access:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:20:14.116Z"
+  },
+  {
+    "id": "0a2b0b7a-5224-427f-9b14-215d33781969",
+    "pnr": "TR1190B",
+    "customer": "Arvind Kulkarni",
+    "intent": "hotel_request",
+    "policyUsed": [
+      "Supplied Service Rules - Delay Compensation Rule"
+    ],
+    "decision": "[eligible] Delay exceeds 3 hours: meal voucher and lounge access.",
+    "actions": [
+      "issue_meal_voucher:completed",
+      "issue_lounge_access:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:20:45.353Z"
   }
 ]

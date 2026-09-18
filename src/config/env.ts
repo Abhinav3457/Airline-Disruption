@@ -25,6 +25,15 @@ const envSchema = z.object({
 
   // Groq chat model. Defaults to a current production model on Groq.
   GROQ_MODEL: z.string().trim().default('openai/gpt-oss-120b'),
+
+  // Allowed browser origins for CORS (comma-separated), e.g. the deployed
+  // frontend on Render. Unset + production reflects any origin; unset + dev
+  // allows '*' for local Vite.
+  CORS_ORIGIN: z
+    .string()
+    .trim()
+    .transform((value) => (value.length > 0 ? value : undefined))
+    .optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -45,6 +54,9 @@ export const env = {
   isProd: parsed.data.NODE_ENV === 'production',
   groqApiKey: parsed.data.GROQ_API_KEY,
   groqModel: parsed.data.GROQ_MODEL,
+  corsOrigins: parsed.data.CORS_ORIGIN?.split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0),
 } as const;
 
 export type Env = typeof env;

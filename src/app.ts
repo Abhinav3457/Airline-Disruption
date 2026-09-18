@@ -28,10 +28,17 @@ export function createApp(): Express {
   // Security headers
   app.use(helmet());
 
-  // Cross-origin resource sharing
+  // Cross-origin resource sharing.
+  // CORS_ORIGIN (comma-separated) restricts origins in production; when unset,
+  // deployed apps reflect any origin and local dev allows '*' for Vite.
   app.use(
     cors({
-      origin: env.isProd ? undefined : '*',
+      origin:
+        env.corsOrigins && env.corsOrigins.length > 0
+          ? env.corsOrigins
+          : env.isProd
+            ? true
+            : '*',
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     })
   );
