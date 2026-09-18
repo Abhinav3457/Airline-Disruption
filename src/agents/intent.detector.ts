@@ -62,6 +62,11 @@ const RULES: Array<{
     ],
   },
   {
+    intent: 'refund_request',
+    confidence: 0.94,
+    patterns: [/\brefund\b/i, /\bmoney back\b/i],
+  },
+  {
     intent: 'upgrade_request',
     confidence: 0.9,
     patterns: [
@@ -70,11 +75,6 @@ const RULES: Array<{
       /\bfirst class\b/i,
       /\bpremium\b/i,
     ],
-  },
-  {
-    intent: 'refund_request',
-    confidence: 0.94,
-    patterns: [/\brefund\b/i, /\bmoney back\b/i],
   },
   {
     intent: 'rebooking_request',

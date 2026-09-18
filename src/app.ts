@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import { CONFIG, API_PREFIX } from './config/constants';
 import { env } from './config/env';
 import healthRouter from './routes/health.routes';
+import agentRouter from './routes/agent.routes';
 
 /**
  * Creates and configures the Express application.
@@ -38,6 +39,7 @@ export function createApp(): Express {
 
   // Routes
   app.use(`${API_PREFIX}/health`, healthRouter);
+  app.use(`${API_PREFIX}/agent`, agentRouter);
 
   return app;
 }

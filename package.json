@@ -11,7 +11,8 @@
     "verify:data": "tsx src/utils/verify-data.ts",
     "verify:services": "tsx src/utils/verify-services.ts",
     "verify:engine": "tsx src/utils/verify-policy-engine.ts",
-    "verify:agents": "tsx src/utils/verify-agents.ts"
+    "verify:agents": "tsx src/utils/verify-agents.ts",
+    "verify:chat": "tsx src/utils/verify-orchestrator.ts"
   },
   "keywords": [
     "airline",

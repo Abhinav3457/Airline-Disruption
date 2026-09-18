@@ -22,6 +22,9 @@ const envSchema = z.object({
     .trim()
     .transform((value) => (value.length > 0 ? value : undefined))
     .optional(),
+
+  // Groq chat model. Defaults to a current production model on Groq.
+  GROQ_MODEL: z.string().trim().default('openai/gpt-oss-120b'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -41,6 +44,7 @@ export const env = {
   isDev: parsed.data.NODE_ENV === 'development',
   isProd: parsed.data.NODE_ENV === 'production',
   groqApiKey: parsed.data.GROQ_API_KEY,
+  groqModel: parsed.data.GROQ_MODEL,
 } as const;
 
 export type Env = typeof env;

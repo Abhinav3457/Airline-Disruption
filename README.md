@@ -49,6 +49,7 @@ npm start
 | `npm run verify:services` | Exercise all service functions against fixtures |
 | `npm run verify:engine`    | Test the deterministic policy engine & boundaries   |
 | `npm run verify:agents`    | Test intent, executor, escalation, audit modules    |
+| `npm run verify:chat`      | Test the full agent pipeline (LLM disabled)         |
 
 ## Services
 
@@ -105,12 +106,14 @@ server/
 │   │   ├── customer.service.ts  # PNR/name lookups, enriched profiles
 │   │   ├── booking.service.ts   # leg lookups, disruption & status summaries
 │   │   ├── policy.service.ts    # policy envelopes { policyId, source, details }
-│   │   └── audit.service.ts     # audit record persistence & queries
-│   ├── agents/        # LLM agent logic (Groq) (TODO)
+│   │   ├── audit.service.ts     # audit record persistence & queries
+│   │   └── llm.service.ts       # Groq phraser (never decides policy)
+│   ├── agents/        # Agent layer (deterministic core + orchestration)
 │   │   ├── policy.engine.ts     # deterministic eligibility decisions
 │   │   ├── intent.detector.ts   # rule-based intent + entity extraction
 │   │   ├── action.executor.ts   # policy-gated simulated actions
-│   │   └── escalation.handler.ts# human escalation routing
+│   │   ├── escalation.handler.ts# human escalation routing
+│   │   └── agent.orchestrator.ts# full pipeline: intent→policy→action→audit
 │   ├── controllers/   # Request handlers
 │   ├── routes/        # Express routers
 │   ├── middleware/    # Custom middleware (TODO)
@@ -172,6 +175,27 @@ no exceptions; flight rebooking details are never invented.
   `escalated_to_human`.
 - **audit.service** — `createAuditRecord` / `getAuditRecordsByPnr` /
   `getAllAuditRecords`, zod-validated, persisted to `src/data/audit-logs.json`.
+
+## Agent Chat API
+
+```
+POST /api/agent/chat
+{ "pnr": "TR1190B", "message": "My flight is delayed 4 hours and I need a hotel" }
+```
+
+Response: `{ success, data: { message, intent, customer, booking, policyUsed,
+decision, actions, escalation, auditId, llmUsed } }`. Validation errors return
+HTTP 400 with field-level issues.
+
+Pipeline: validate → identify customer → detect intent → deterministic policy
+engine → authorization → simulated execution → escalation → audit → response.
+
+**LLM policy**: Groq (if `GROQ_API_KEY` is set) only *phrases* the final
+deterministic response — it never decides eligibility, invents policy/flights,
+or approves prohibited actions. Missing key, timeout, or API error
+automatically falls back to deterministic replies; the three mandatory
+scenarios work with or without a key. Set `LLM_DISABLED=1` to force fallback
+mode. `GET /api/agent` reports LLM availability and model.
 
 ## Roadmap (not yet implemented)
 

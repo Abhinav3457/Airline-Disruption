@@ -8,7 +8,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import type { AuditRecord, ExecutedAction, EscalationResult } from '../types';
+import type { AuditRecord, EscalationResult } from '../types';
 
 import { appendAuditRecord, getAuditLogs } from '../data/store';
 
@@ -21,14 +21,14 @@ export interface CreateAuditRecordInput {
   /** Deterministic decision summary. */
   decision: string;
   /** Executed (simulated) actions to embed as 'action:status' strings. */
-  actions?: ExecutedAction[];
+  actions?: Array<{ action: string; status: string }>;
   /** Escalation result; null/undefined when none occurred. */
   escalation?: EscalationResult | null;
   timestamp?: string;
 }
 
 /** Shape each executed action as a compact audit string. */
-function formatAction(action: ExecutedAction): string {
+function formatAction(action: { action: string; status: string }): string {
   return `${action.action}:${action.status}`;
 }
 
