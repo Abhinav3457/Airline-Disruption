@@ -510,5 +510,87 @@
     ],
     "escalation": null,
     "timestamp": "2026-09-18T08:20:45.353Z"
+  },
+  {
+    "id": "a0afb66e-e596-4ef7-abac-81e2044bf871",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "refund_request",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Refund Rule"
+    ],
+    "decision": "[eligible] Full refund to the original payment method within 7 business days.",
+    "actions": [
+      "initiate_refund:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:40:04.692Z"
+  },
+  {
+    "id": "0e858070-bad2-4a44-b062-d2c4f04c9fca",
+    "pnr": "TR1190B",
+    "customer": "Arvind Kulkarni",
+    "intent": "hotel_request",
+    "policyUsed": [
+      "Supplied Service Rules - Delay Compensation Rule"
+    ],
+    "decision": "[eligible] Delay exceeds 3 hours: meal voucher and lounge access.",
+    "actions": [
+      "issue_meal_voucher:completed",
+      "issue_lounge_access:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:40:37.266Z"
+  },
+  {
+    "id": "1a9bc074-13f0-43e8-ae2d-c14374a79c14",
+    "pnr": "SK4821X",
+    "customer": "Priya Nair",
+    "intent": "refund_request",
+    "policyUsed": [
+      "Supplied Service Rules - Cancellation Rule",
+      "Supplied Service Rules - Refund Rule"
+    ],
+    "decision": "[eligible] Full refund to the original payment method within 7 business days.",
+    "actions": [
+      "initiate_refund:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:40:38.306Z"
+  },
+  {
+    "id": "841c1ce5-013c-48a7-9cca-f4dcf9cae984",
+    "pnr": "TR1190B",
+    "customer": "Arvind Kulkarni",
+    "intent": "hotel_request",
+    "policyUsed": [
+      "Supplied Service Rules - Delay Compensation Rule"
+    ],
+    "decision": "[eligible] Delay exceeds 3 hours: meal voucher and lounge access.",
+    "actions": [
+      "issue_meal_voucher:completed",
+      "issue_lounge_access:completed"
+    ],
+    "escalation": null,
+    "timestamp": "2026-09-18T08:40:42.018Z"
+  },
+  {
+    "id": "b1cb0c35-db40-4863-9867-37e6ba5d02cf",
+    "pnr": "WL7742",
+    "customer": "Meher Kaur",
+    "intent": "hotel_request",
+    "policyUsed": [
+      "Supplied Service Rules - Delay Compensation Rule",
+      "Supplied Service Rules - Fare Difference Rule"
+    ],
+    "decision": "[escalation_required] Delay exceeds 5 hours: meal voucher, lounge access, and hotel for the delayed hours only.",
+    "actions": [
+      "issue_meal_voucher:completed",
+      "issue_lounge_access:completed",
+      "arrange_delayed_hours_hotel:completed"
+    ],
+    "escalation": "Fare-difference waiver above ₹1,500 requires supervisor approval.",
+    "timestamp": "2026-09-18T08:41:04.951Z"
   }
 ]
