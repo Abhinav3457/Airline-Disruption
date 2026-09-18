@@ -1,0 +1,54 @@
+# Render Blueprint — AeroResolve (backend API + frontend static site)
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Deploys two services from this repo:
+#   1. aeroresolve-api — Express + TypeScript web service (the agent API)
+#   2. aeroresolve-web — React + Vite static site (the ops console)
+#
+# After Render applies the Blueprint it will prompt for the two `sync: false`
+# values:
+#   - GROQ_API_KEY      → your Groq key (optional; the API works without it
+#                          and falls back to deterministic replies)
+#   - VITE_API_BASE_URL → the API service URL Render just created, with /api
+#                          appended (e.g. https://aeroresolve-api.onrender.com/api).
+#                          Set it, then redeploy the static site once so the
+#                          value is baked into the build.
+# Optionally set CORS_ORIGIN on the API to the frontend's onrender.com URL to
+# lock CORS down (runtime var — changing it redeploys automatically).
+
+services:
+  # ---------------------------------------------------------------- backend
+  - type: web
+    name: aeroresolve-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render injects PORT automatically; the app binds to it.
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      # Comma-separated browser origins allowed by CORS, e.g.
+      # https://aeroresolve-web.onrender.com
+      - key: CORS_ORIGIN
+        sync: false
+
+  # --------------------------------------------------------------- frontend
+  - type: web
+    name: aeroresolve-web
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      # SPA fallback: serve index.html for client-side routes like /agent
+      - type: rewrite
+        source: /*
+        destination: /index.html

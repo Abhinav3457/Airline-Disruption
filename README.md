@@ -448,6 +448,30 @@ cd frontend && npm install && npm run dev # http://localhost:3000
 
 Production build: `cd frontend && npm run build && npm run preview`.
 
+## Deploying to Render
+
+The repo root contains a **Render Blueprint** (`render.yaml`) that provisions both services from one push:
+
+| Service | Type | Build | Start/Publish |
+|---|---|---|---|
+| `aeroresolve-api` | Web service (Node) | `npm ci && npm run build` | `npm start` · health check `/api/health` |
+| `aeroresolve-web` | Static site | `cd frontend && npm ci && npm run build` | publishes `frontend/dist` with an SPA rewrite to `index.html` |
+
+### One-time setup
+
+1. Push this repo to GitHub, then in the Render dashboard: **New → Blueprint**, pick the repo, **Apply**.
+2. Render prompts for the `sync: false` values:
+   - **`GROQ_API_KEY`** — your Groq key (optional; without it the agent replies deterministically).
+   - **`CORS_ORIGIN`** — after the first deploy, the frontend's URL (e.g. `https://aeroresolve-web.onrender.com`). Runtime var — updating it redeploys the API automatically.
+   - **`VITE_API_BASE_URL`** — after the API exists, its URL + `/api` (e.g. `https://aeroresolve-api.onrender.com/api`). **Build-time var for the static site** — set it, then trigger one manual redeploy of `aeroresolve-web` so it's baked into the bundle.
+3. Verify: open the web URL (the header pill should read **Backend connected**) and hit `https://<api-host>/api/health`.
+
+### Notes
+
+- **Free-plan cold starts**: both services sleep after ~15 min idle; the first request takes ~30–60 s to wake (the frontend's health pill will show *Checking…* then recover).
+- **Ephemeral disk**: `audit-logs.json` / `action-logs.json` reset on redeploy. Attach a Render **persistent disk** (paid) if you need them to survive; no code change is required since the store resolves its data dir at runtime.
+- Backend already binds to Render's injected `PORT` via `src/config/env.ts`; no code changes were needed for deployment.
+
 ### Backend connection
 
 `frontend/src/services/apiClient.ts` creates an axios instance from `VITE_API_BASE_URL`. Every failure is normalized to an `ApiError` carrying the backend's `code`/`message` (network down → "Cannot reach the server. Is the backend running on port 5000?", shown as a toast). The header pill in the UI probes `GET /api/health` every 30 s and shows **Backend connected / Backend offline / Checking…**. CORS on the backend already allows the Vite origin.
