@@ -1,251 +1,414 @@
-# Airline Customer-Facing Resolution Agent — Backend
+# ✈️ Airline Customer-Facing Resolution Agent — Backend
 
-Backend for an AI-powered airline customer support resolution agent.
-Built as part of an AI agent assessment.
+A production-structured Express + TypeScript backend for an AI-powered airline customer-support agent. Customers describe a disruption in natural language; the backend identifies them, detects intent, makes **deterministic** policy decisions, executes allowed actions, escalates what it must not decide, and audits everything.
 
-## Tech Stack
+> **Core principle:** the LLM is a *phraser*, never a *decider*. All eligibility, compensation, and authorization decisions come from a deterministic policy engine built strictly on the supplied assignment rules.
 
-- **Node.js** + **Express 5**
-- **TypeScript** (strict mode)
-- **Groq SDK** (primary LLM provider)
-- **zod** (env & payload validation)
-- **dotenv**, **cors**, **helmet**, **morgan**, **uuid**
-- **tsx** (dev server with hot reload)
+---
 
-## Getting Started
+## 1. Project Overview
 
-### Prerequisites
+| | |
+|---|---|
+| **Domain** | Airline disruption support (cancellations, delays, refunds, rebooking) |
+| **Interface** | REST API only — no frontend in this repository |
+| **LLM** | Groq (`groq-sdk`), optional — the system is fully functional without it |
+| **Data** | Fixed seed dataset: 3 customers, 4 bookings, policy documents |
+| **Persistence** | JSON files (`action-logs.json`, `audit-logs.json`) — deliberately simple |
+| **Status** | Assessment-ready: all test suites pass, build verified |
 
-- Node.js >= 20
-- npm
+## 2. Assignment Objective
 
-### Setup
+Build the backend for a customer-facing resolution agent that can:
 
-```bash
-# 1. Install dependencies
-npm install
+1. Recognize a customer by PNR from natural conversation.
+2. Understand what they are asking for (refund, hotel, waiver, status…).
+3. Decide — **deterministically** — what policy entitles them to.
+4. Execute only the allowed actions, simulated (no real airline systems).
+5. Escalate anything prohibited or beyond authority to a human.
+6. Audit every decision and action.
+7. Reply in empathetic natural language (LLM), with a deterministic fallback when no LLM is available.
 
-# 2. Configure environment
-cp .env.example .env
-# then set GROQ_API_KEY (get one at https://console.groq.com/keys)
+## 3. Architecture
 
-# 3. Run in development (hot reload)
-npm run dev
+Layered, unidirectional dependency flow. The policy engine is the single decision authority; the LLM sits at the edge and only rewords its output.
 
-# Production
-npm run build
-npm start
+```mermaid
+flowchart TB
+    subgraph CLIENT["Client"]
+        REQ["HTTP Request"]
+    end
+
+    subgraph EDGE["Edge Layer"]
+        MW["helmet · cors · morgan · json body parser"]
+        ROUTES["Routes → Controllers (zod validation)"]
+    end
+
+    subgraph ORCH["Agent Orchestrator"]
+        DET["Intent Detector<br/>(rule-based, 12 intents)"]
+        PIPE["Pipeline per intent"]
+    end
+
+    subgraph BRAIN["Decision Core (deterministic)"]
+        ENGINE["Policy Engine<br/>cancellation · delay · refund<br/>fare difference · loyalty<br/>authorization · escalation"]
+    end
+
+    subgraph MODULES["Agent Support Modules"]
+        EXEC["Action Executor<br/>(simulated, whitelist-gated)"]
+        ESC["Escalation Handler<br/>(8 triggers → priority)"]
+    end
+
+    subgraph DATA["Data Layer"]
+        STORE["Typed Data Store<br/>(zod-validated JSON)"]
+        CUST["customers.json"]
+        BOOK["bookings.json"]
+        POL["policies.json"]
+        LOGS["action-logs.json / audit-logs.json"]
+    end
+
+    subgraph LANG["Language"]
+        LLM["Groq LLM Phraser<br/>(optional, boxed)"]
+        FB["Deterministic Reply Builder<br/>(fallback)"]
+    end
+
+    REQ --> MW --> ROUTES --> DET --> PIPE
+    PIPE -->|retrieve| STORE
+    PIPE -->|decide| ENGINE
+    ENGINE -->|allowed actions| EXEC
+    ENGINE -->|prohibited/beyond authority| ESC
+    EXEC -->|persist| LOGS
+    ESC -->|persist| LOGS
+    PIPE -->|fallback text + decision| LLM
+    LLM -->|used: false on any failure| FB
+    PIPE --> AUDIT["Audit Service"] --> LOGS
+    PIPE --> RESP["Structured JSON response"] --> ROUTES
 ```
 
-## Scripts
+Key invariants:
 
-| Script               | Description                                    |
-| -------------------- | ---------------------------------------------- |
-| `npm run dev`        | Dev server with watch mode (tsx)               |
-| `npm run build`      | Compile TypeScript to `dist/` + copy seed data |
-| `npm start`          | Run compiled server from `dist/`               |
-| `npm run typecheck`  | Typecheck without emitting                     |
-| `npm run verify:data`     | Validate seed data against schemas & fixtures  |
-| `npm run verify:services` | Exercise all service functions against fixtures |
-| `npm run verify:engine`    | Test the deterministic policy engine & boundaries   |
-| `npm run verify:agents`    | Test intent, executor, escalation, audit modules    |
-| `npm run verify:chat`      | Test the full agent pipeline (LLM disabled)         |
-| `npm run verify:api`       | Full HTTP test matrix (all endpoints + errors)      |
+- **One authority:** `src/agents/policy.engine.ts` decides eligibility. No other module may approve, waive, or compensate.
+- **LLM is sandboxed:** it receives the final decision as its *only* source of truth and must preserve scope qualifiers ("delayed hours only", "original payment method", "within 24 hours"). Any failure (missing key, timeout, API error, empty reply) silently degrades to the deterministic reply.
+- **Validation at every boundary:** JSON seed data is zod-validated at load; API inputs are zod-validated per request.
 
-## Services
-
-- **customer.service** — `getAllCustomers`, `getCustomerByPnr` (case-insensitive),
-  `getCustomerByName`, `getCustomerProfile` (customer + booking legs). Not-found
-  lookups return `undefined`.
-- **booking.service** — `getBookingsByPnr`, `getBookingByFlightNumber`,
-  `getPrimaryDisruptedBooking` (cancellation outranks delay; longest delay wins),
-  `getBookingStatus` (all legs + primary disruption summary).
-- **policy.service** — every rule returned as `{ policyId, source, details }`,
-  e.g. `delay_compensation` / `Supplied Service Rules - Delay Compensation Rule`.
-  No rules are invented; the service only labels and exposes validated policy data.
-
-## API Endpoints
-
-| Method | Endpoint       | Description             |
-| ------ | -------------- | ----------------------- |
-| GET    | `/api/health`  | Service health check    |
-
-### Example
-
-```bash
-curl http://localhost:5000/api/health
-```
-
-```json
-{
-  "status": "ok",
-  "service": "airline-resolution-agent",
-  "environment": "development",
-  "uptimeSeconds": 3,
-  "timestamp": "2026-09-18T12:00:00.000Z"
-}
-```
-
-## Project Structure
+## 4. Folder Structure
 
 ```
-server/
-├── src/
-│   ├── config/        # Environment config & constants
-│   │   ├── env.ts
-│   │   └── constants.ts
-│   ├── data/          # Seed data + schemas + typed store
-│   │   ├── customers.json    # 3 customers
-│   │   ├── bookings.json     # 4 bookings
-│   │   ├── policies.json     # cancellation/delay/refund/fare/loyalty rules
-│   │   ├── action-logs.json  # runtime action trail (starts empty)
-│   │   ├── audit-logs.json   # conversation audit trail (starts empty)
-│   │   ├── schemas.ts        # zod schemas pinned to domain types
-│   │   └── store.ts          # typed loaders + PNR lookups
-│   ├── types/         # Shared TypeScript types (customer/booking/policy/action/agent)
-│   ├── services/      # Business logic
-│   │   ├── customer.service.ts  # PNR/name lookups, enriched profiles
-│   │   ├── booking.service.ts   # leg lookups, disruption & status summaries
-│   │   ├── policy.service.ts    # policy envelopes { policyId, source, details }
-│   │   ├── audit.service.ts     # audit record persistence & queries
-│   │   └── llm.service.ts       # Groq phraser (never decides policy)
-│   ├── agents/        # Agent layer (deterministic core + orchestration)
-│   │   ├── policy.engine.ts     # deterministic eligibility decisions
-│   │   ├── intent.detector.ts   # rule-based intent + entity extraction
-│   │   ├── action.executor.ts   # policy-gated simulated actions
-│   │   ├── escalation.handler.ts# human escalation routing
-│   │   └── agent.orchestrator.ts# full pipeline: intent→policy→action→audit
-│   ├── controllers/   # Request handlers
-│   ├── routes/        # Express routers
-│   ├── middleware/    # Custom middleware (TODO)
-│   ├── utils/         # Helpers (verify-data.ts)
-│   ├── app.ts         # Express app setup
-│   └── server.ts      # HTTP server bootstrap
+.
 ├── scripts/
-│   └── copy-data.js   # copies seed JSON to dist/ on build
-├── .env
-├── .env.example
+│   └── copy-data.js              # copies seed JSON into dist/ after tsc (build step)
+├── src/
+│   ├── agents/
+│   │   ├── action.executor.ts    # simulated, policy-gated action execution
+│   │   ├── agent.orchestrator.ts # full pipeline: intent → policy → action → audit → reply
+│   │   ├── escalation.handler.ts # 8 escalation triggers → priority routing
+│   │   ├── intent.detector.ts    # rule-based intent + entity extraction
+│   │   └── policy.engine.ts      # ⚖️ deterministic decision authority (8 evaluators)
+│   ├── config/
+│   │   ├── constants.ts          # API prefix, limits, log formats
+│   │   └── env.ts                # zod-validated environment config
+│   ├── controllers/
+│   │   ├── agent.controller.ts   # chat + action execution + escalation endpoints
+│   │   ├── audit.controller.ts   # audit retrieval
+│   │   ├── booking.controller.ts # booking lookups
+│   │   ├── customer.controller.ts# customer lookups
+│   │   └── policy.controller.ts  # policy documents
+│   ├── data/
+│   │   ├── action-logs.json      # executed-action log (runtime, append-only)
+│   │   ├── audit-logs.json       # audit records (runtime, append-only)
+│   │   ├── bookings.json         # 4 booking legs (seed, verbatim)
+│   │   ├── customers.json        # 3 customers (seed, verbatim)
+│   │   ├── policies.json         # policy documents (seed, verbatim)
+│   │   ├── schemas.ts            # zod schemas pinned to the TS interfaces
+│   │   └── store.ts              # typed loaders + append helpers
+│   ├── middleware/
+│   │   ├── error.middleware.ts   # AppError, 404, centralized error handler (arity-4)
+│   │   └── validation.middleware.ts # shared zod schemas (PNR, chat, action, escalation)
+│   ├── routes/
+│   │   ├── action.routes.ts      escalation.routes.ts
+│   │   ├── agent.routes.ts       audit.routes.ts
+│   │   ├── booking.routes.ts     customer.routes.ts
+│   │   ├── health.routes.ts      policy.routes.ts
+│   ├── services/
+│   │   ├── audit.service.ts      # createAuditRecord / getByPnr / getAll
+│   │   ├── booking.service.ts    # booking lookups + disruption summaries
+│   │   ├── customer.service.ts   # customer lookups + profiles
+│   │   ├── llm.service.ts        # Groq phraser (never throws, always falls back)
+│   │   └── policy.service.ts     # structured policy documents + source labels
+│   ├── types/                    # 11 typed modules + barrel (index.ts)
+│   ├── utils/
+│   │   ├── strings.ts            # PNR/name normalization, list formatting
+│   │   └── verify-*.ts           # 6 runnable test suites (see §Test Commands)
+│   ├── app.ts                    # Express app assembly + route mounting
+│   └── server.ts                 # HTTP server bootstrap, graceful shutdown
+├── .env / .env.example           # secrets (env is git-ignored)
 ├── .gitignore
 ├── package.json
-├── tsconfig.json
+├── tsconfig.json                 # strict mode
 └── README.md
 ```
 
-## Data Layer
+## 5. Tech Stack
 
-Seed data lives in `src/data/*.json` and is validated with zod at load time
-(`src/data/schemas.ts`), with types in `src/types/`. Customers are keyed by
-PNR; bookings link to customers via `pnr`. Bookings are a discriminated union
-on `status` (`Cancelled | Delayed | Unaffected`).
+| Layer | Choice | Why |
+|---|---|---|
+| Runtime | Node.js + npm | assignment requirement |
+| Framework | Express 5 | routing + middleware |
+| Language | TypeScript (strict) | compile-time safety everywhere |
+| Validation | zod | one schema language for env, seed data, and API input |
+| LLM | `groq-sdk` (Groq) | fast inference; optional by design |
+| Security | helmet, cors | headers + origin policy |
+| Logging | morgan | HTTP request logs |
+| IDs | `node:crypto.randomUUID()` | native UUIDv4; `uuid` retained per stack spec |
+| Dev | tsx, typescript | instant dev loop, strict typecheck |
 
-Verify the data layer any time with:
+No database, no Redis, no Docker, no LangChain — intentionally excluded.
+
+## 6. Data Model
+
+Seed data is **verbatim from the assignment** — nothing invented, nothing extra. Customers are keyed by PNR (the only identifier supplied); bookings reference customers via `pnr`.
+
+- **`Customer`** — name, loyalty tier (`Gold | Silver | Platinum`), pnr, email, phone, travel history (flights/12mo), previous complaints.
+- **`Booking`** — discriminated union on `status`:
+  - `CancelledBooking` — has `cancellationReason` (airline-caused iff `"Operational reasons"`),
+  - `DelayedBooking` — has `delayHours`, `newDeparture`,
+  - `UnaffectedBooking`.
+  Because it's a union, `delayHours` is unreachable without narrowing — a compile-time guarantee that compensation logic handles every status.
+- **`PolicyDocument`** — cancellation, delay tiers (3h/5h), refund (7 business days, original method), fare difference (₹1,500 waiver threshold), loyalty, 6 allowed actions, 5 prohibited rules.
+- **`ActionLog` / `AuditRecord`** — runtime records with `id`, `timestamp`, `simulated: true` on actions.
+
+## 7. Agent Workflow
+
+```
+User message
+  ↓ Validate request (zod: pnr format, non-empty message)
+  ↓ Detect customer / PNR        (from request or message text)
+  ↓ Retrieve customer            (case-insensitive; 404 if unknown)
+  ↓ Retrieve booking             (all legs for the PNR)
+  ↓ Detect intent                (rule-based, 12 intents + entities: flight no, payment method, ₹ amounts)
+  ↓ Retrieve relevant policy     (policy service, source-labeled)
+  ↓ Run deterministic policy engine   ← THE ONLY DECISION POINT
+  ↓ Check action authorization   (evaluateActionAuthorization gate)
+  ↓ Execute allowed actions      (simulated, whitelisted, persisted)
+  ↓ Create escalation if required (8 triggers → high/medium/low)
+  ↓ Create audit record          (persisted, returns auditId)
+  ↓ Generate natural-language response (Groq phraser, or deterministic fallback)
+  ↓ Return structured JSON
+```
+
+## 8. Policy Engine Explanation
+
+Every evaluator returns the exact contract:
+
+```json
+{
+  "status": "eligible | partially_eligible | ineligible | escalation_required | clarification_required",
+  "eligibleActions": [],
+  "ineligibleActions": [],
+  "requiresEscalation": false,
+  "escalationReason": null,
+  "policySources": [],
+  "explanation": ""
+}
+```
+
+Rules encoded exactly as supplied (thresholds read from validated policy data, not hardcoded literals):
+
+| Rule | Implementation |
+|---|---|
+| Cancellation | Airline-caused ("Operational reasons") → free rebooking within 24 h **or** full refund. Any other cause → ineligible, no exceptions. |
+| Delay < 3 h | ₹500 meal voucher |
+| Delay > 3 h | voucher + lounge access |
+| Delay > 5 h | voucher + lounge + hotel **for delayed hours only** |
+| Boundaries | exactly 3 h is not "more than 3"; exactly 5 h is not "more than 5" (bands are cumulative: entitlements never decrease with delay length) |
+| Refund | full refund, within 7 business days, **original payment method only**; different method → escalation |
+| Fare difference | customer pays; waiver ≤ ₹1,500 grantable; **strictly above ₹1,500 → supervisor escalation** (₹1,500.00 exactly is not "above") |
+| Loyalty | Gold/Platinum → priority rebooking **only**; never extra compensation |
+
+## 9. Allowed Actions
+
+`initiate_refund` · `request_rebooking` (within 24 h, airline-caused cancellation) · `issue_meal_voucher` · `issue_lounge_access` · `arrange_delayed_hours_hotel`
+
+Plus two policy-implied non-executable outcomes the agent may *state*: `priority_rebooking` (Gold/Platinum) and waiver of fare difference **up to ₹1,500**.
+
+## 10. Prohibited Actions
+
+The agent never does any of these — enforcement is structural (whitelists) plus engine gates:
+
+1. Compensation beyond policy
+2. Waiving fare difference above ₹1,500
+3. Exceptions for non-airline-caused disruptions
+4. Legal/formal complaint handling without escalation
+5. Refund to a different payment method
+
+Additional hard guarantees: no invented flight availability (no inventory exists anywhere in the codebase — rebooking returns only the 24 h window), no invented customer data (services read only from the validated store), no unauthorized upgrades (loyalty yields priority rebooking only; upgrades route to fare-difference rules).
+
+## 11. Escalation Logic
+
+8 triggers, each mapped to a fixed priority:
+
+| Trigger | Priority |
+|---|---|
+| Legal threats | high |
+| Formal complaints | high |
+| Unauthorized exceptions | high |
+| Compensation beyond policy | medium |
+| Fare waiver above ₹1,500 | medium |
+| Refund to different payment method | medium |
+| Missing authority | medium |
+| Unclear requests requiring human review | low |
+
+Escalations never suppress already-granted remedies — if a delay entitlement was executed and a waiver also needs a supervisor, the response reports both. Escalations are persisted in the audit trail.
+
+## 12. API Endpoints
+
+Uniform envelope: `{ "success": true, "data": … }` or `{ "success": false, "error": { "code", "message", "issues?" } }`. No stack traces in responses.
+
+| Method | Endpoint | Description | Codes |
+|---|---|---|---|
+| GET | `/api/health` | liveness + LLM availability | 200 |
+| GET | `/api/customers` | all customers | 200 |
+| GET | `/api/customers/:pnr` | customer profile | 200/400/404 |
+| GET | `/api/customers/:pnr/bookings` | customer + their bookings | 200/400/404 |
+| GET | `/api/bookings/:pnr` | all booking legs for PNR | 200/400/404 |
+| GET | `/api/bookings/:pnr/status` | disruption summary per leg | 200/400/404 |
+| GET | `/api/policies` | all policy documents + source labels | 200 |
+| POST | `/api/agent/chat` | main agent conversation | 200/400/404 |
+| GET | `/api/agent` | agent metadata + LLM status | 200 |
+| GET | `/api/audit` | all audit records (`?pnr=` optional filter) | 200/400 |
+| GET | `/api/audit/:pnr` | audit records for one PNR | 200/400 |
+| POST | `/api/actions/execute` | execute one allowed action (policy-gated) | 201/400/404 |
+| POST | `/api/escalations` | file an escalation | 201/400 |
+
+`POST /api/agent/chat` request/response:
+
+```json
+// request
+{ "pnr": "TR1190B", "message": "My flight is delayed 4 hours and I need a hotel" }
+
+// response
+{
+  "success": true,
+  "data": {
+    "message": "…natural language reply…",
+    "intent": "hotel_request",
+    "customer": { "name": "Arvind Kulkarni", "loyaltyTier": "Silver", "…": "…" },
+    "booking": { "…": "…" },
+    "policyUsed": ["Supplied Service Rules - Delay Compensation Rule", "…"],
+    "decision": { "status": "partially_eligible", "eligibleActions": ["issue_meal_voucher", "issue_lounge_access"], "…": "…" },
+    "actions": [{ "actionType": "issue_meal_voucher", "status": "completed", "…": "…" }],
+    "escalation": null,
+    "auditId": "uuid",
+    "llmUsed": true
+  }
+}
+```
+
+## 13. Environment Setup
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `PORT` | no | `5000` | HTTP port |
+| `NODE_ENV` | no | `development` | `production` hides error details, uses combined logs |
+| `GROQ_API_KEY` | no | — | enables LLM phrasing; omit for deterministic-only mode |
+| `GROQ_MODEL` | no | `openai/gpt-oss-120b` | any Groq-hosted model id |
+| `LLM_DISABLED` | no | — | set to `1` to force deterministic fallback (ops kill-switch, used by test suites) |
+
+`.env` is git-ignored; `.env.example` is the template. No API keys exist anywhere in the codebase.
+
+## 14. Installation
 
 ```bash
-npm run verify:data
+npm install
+cp .env.example .env      # add GROQ_API_KEY if you want LLM phrasing
 ```
 
-## Policy Engine (`src/agents/policy.engine.ts`)
+## 15. Running Locally
 
-Deterministic eligibility decisions from the supplied rules — **the LLM never
-decides policy**. Eight evaluators cover cancellation, delay compensation,
-refund, fare difference, loyalty, action authorization, and escalation, each
-returning `{ status, eligibleActions, ineligibleActions, requiresEscalation,
-escalationReason, policySources, explanation }`.
-
-Enforced boundaries: exactly 3h is *not* "more than 3" (voucher only); exactly
-5h is *not* "more than 5" (no hotel); hotel is for delayed hours only; a waiver
-of exactly ₹1,500 is allowed while anything above needs supervisor approval;
-non-original refund methods are escalated; non-airline-caused disruptions get
-no exceptions; flight rebooking details are never invented.
-
-## Agent Support Modules
-
-- **intent.detector** — rule-based classification into 12 intents
-  (`flight_status`, `cancellation_support`, `refund_request`,
-  `rebooking_request`, `delay_compensation`, `meal_voucher_request`,
-  `lounge_request`, `hotel_request`, `fare_difference_request`,
-  `upgrade_request`, `legal_complaint`, `unknown`) with entity extraction
-  (PNR, flight number, payment method, ₹ amounts). Detection never overrides
-  policy.
-- **action.executor** — simulated execution of the five allowed actions,
-  each gated by the policy engine; refusals are recorded as `failed` with the
-  policy reason. Every record: unique id, PNR, action, status, timestamp,
-  reason, `simulated: true`.
-- **escalation.handler** — deterministic trigger → priority routing
-  (legal/formal → high, money-related → medium, unclear → low) with status
-  `escalated_to_human`.
-- **audit.service** — `createAuditRecord` / `getAuditRecordsByPnr` /
-  `getAllAuditRecords`, zod-validated, persisted to `src/data/audit-logs.json`.
-
-## API Endpoints
-
-| Method | Endpoint                  | Description                                    |
-| ------ | ------------------------- | ---------------------------------------------- |
-| GET    | `/api/health`             | Liveness probe                                 |
-| GET    | `/api/customers`          | All customers                                  |
-| GET    | `/api/customers/:pnr`     | Customer profile + booking legs                |
-| GET    | `/api/bookings/:pnr`      | Booking legs for a PNR                         |
-| GET    | `/api/bookings/:pnr/status` | Legs + primary disruption summary            |
-| GET    | `/api/policies`           | All policy envelopes (`policyId/source/details`)|
-| POST   | `/api/agent/chat`         | One agent turn (full pipeline)                 |
-| GET    | `/api/agent`              | Agent metadata (LLM availability, model)       |
-| GET    | `/api/audit`              | All audit records (`?pnr=` filter optional)    |
-| GET    | `/api/audit/:pnr`         | Audit records for one PNR                      |
-| POST   | `/api/actions/execute`    | Policy-gated simulated action execution        |
-| POST   | `/api/escalations`        | Create a human escalation                      |
-
-All responses use the envelope `{ success: boolean, data?..., error?: { code, message, issues? } }`.
-Errors: 400 validation (zod, field-level issues), 404 not found, 500 internal
-(no stack traces). Error middleware is centralized in `src/middleware/error.middleware.ts`.
-
-## Agent Chat API
-
-```
-POST /api/agent/chat
-{ "pnr": "TR1190B", "message": "My flight is delayed 4 hours and I need a hotel" }
+```bash
+npm run dev               # tsx watch — hot reload (development)
+npm run build             # tsc + copy seed JSON into dist/
+npm start                 # node dist/server.js (production)
+npm run typecheck         # tsc --noEmit
 ```
 
-Response: `{ success, data: { message, intent, customer, booking, policyUsed,
-decision, actions, escalation, auditId, llmUsed } }`. Validation errors return
-HTTP 400 with field-level issues.
-
-Pipeline: validate → identify customer → detect intent → deterministic policy
-engine → authorization → simulated execution → escalation → audit → response.
-
-**LLM policy**: Groq (if `GROQ_API_KEY` is set) only *phrases* the final
-deterministic response — it never decides eligibility, invents policy/flights,
-or approves prohibited actions. Missing key, timeout, or API error
-automatically falls back to deterministic replies; the three mandatory
-scenarios work with or without a key. Set `LLM_DISABLED=1` to force fallback
-mode. `GET /api/agent` reports LLM availability and model.
-
-## Example curl
+## 16. Example API Requests
 
 ```bash
 # Health
 curl http://localhost:5000/api/health
 
-# Chat: Arvind's 4-hour delay
+# Data lookups
+curl http://localhost:5000/api/customers
+curl http://localhost:5000/api/customers/SK4821X
+curl http://localhost:5000/api/bookings/TR1190B/status
+curl http://localhost:5000/api/policies
+
+# Chat — Arvind's 4-hour delay
 curl -X POST http://localhost:5000/api/agent/chat \
   -H "Content-Type: application/json" \
   -d '{"pnr":"TR1190B","message":"My flight is delayed 4 hours and I need a hotel"}'
 
-# Chat: Meher's 6-hour delay + waiver (escalates)
-curl -X POST http://localhost:5000/api/agent/chat \
-  -H "Content-Type: application/json" \
-  -d '{"pnr":"WL7742","message":"My flight is delayed 6 hours. Give me a full-night hotel and waive the Rs2000 fare difference."}'
-
-# Policy-gated simulated action
+# Direct action execution (policy-gated, simulated)
 curl -X POST http://localhost:5000/api/actions/execute \
   -H "Content-Type: application/json" \
   -d '{"pnr":"WL7742","action":"arrange_delayed_hours_hotel","reason":"6h delay entitlement"}'
 
 # Audit trail
 curl http://localhost:5000/api/audit/WL7742
+curl "http://localhost:5000/api/audit?pnr=SK4821X"
 ```
 
-## Roadmap (not yet implemented)
+## 17. Three Mandatory Scenario Results
 
-- Conversation/session persistence across turns
-- Request-ID middleware & structured logging
-- Real (non-simulated) action execution backends
+All verified through the live API (with LLM) **and** the deterministic test suites (without LLM).
+
+**Priya Nair (Gold, SK4821X)** — *"My flight was cancelled. I want a full refund and free business class upgrade."*
+→ intent `refund_request` → refund **initiated** (original payment method, within 7 business days), business-class upgrade **not approved** (fare difference is the customer's responsibility), Gold → priority rebooking only, cancellation recognized as airline-caused ("Operational reasons").
+
+**Arvind Kulkarni (Silver, TR1190B)** — *"My flight is delayed 4 hours. I need hotel accommodation."*
+→ intent `hotel_request` → 4-hour delay recognized; meal voucher **issued** (> 3 h), lounge access **issued**, hotel **refused** (threshold is strictly more than 5 hours), clear explanation given.
+
+**Meher Kaur (Platinum, WL7742)** — *"My flight is delayed 6 hours. Give me a full-night hotel and waive the ₹2000 fare difference."*
+→ intent `hotel_request` + waiver entity → 6-hour delay recognized; meal voucher **issued**, lounge access **issued**, **delayed-hours-only** hotel **arranged** (full-night hotel never authorized), **₹2,000 waiver escalated** to supervisor (above ₹1,500), Platinum → priority rebooking only.
+
+## 18. Fallback Mode
+
+The system is fully functional with **no API key**. The LLM service never throws — any failure (missing key, `LLM_DISABLED=1`, 10 s timeout, API error, empty reply) resolves to `used: false` and the orchestrator sends a deterministic, policy-complete reply built per intent. Every response carries an `llmUsed` flag so callers can see which path produced the text. All three mandatory scenarios pass in fallback mode; they are regression-tested that way (`LLM_DISABLED=1`).
+
+## 19. Assumptions
+
+- "Airline-caused" cancellation ≡ reason `"Operational reasons"` (the only value in the dataset).
+- Fare-difference waiver: the agent may grant up to ₹1,500; anything strictly above needs a supervisor (per supplied rule).
+- Hotel scope for >5 h delays is the delayed hours only; full-night stays are never authorized.
+- PNR is the customer identifier; a PNR can hold multiple booking legs (Priya's outbound + return).
+- Intent detection is keyword/rule-based (English); the LLM may later take over understanding behind the same interface.
+- Rebooking does not pick an actual flight — no inventory exists, and policy forbids inventing one; it returns the 24 h free-rebooking entitlement.
+
+## 20. Limitations
+
+- **Simulated actions** — no real airline/PSS integrations; every executed action is marked `simulated: true`.
+- **File-based persistence** (`action-logs.json`, `audit-logs.json`) — fine for an assessment; not built for concurrent production load. No database by design.
+- **No authentication/authorization** on endpoints (assessment scope); no rate limiting.
+- **Stateless chat** — each request is independent; the optional `history` field aids phrasing but there is no session store.
+- **Static seed data** — 3 customers, 4 bookings; nothing else exists or can be added via API.
+- **Keyword intent detection** — English-only; ambiguous phrasing may need a sentence or two from the user.
+- **LLM output variance** — the phraser is temperature-0.3 and strictly constrained, but wording (not facts) can vary between runs; the decision block in the response is always deterministic.
+
+## 21. AI Tools Used
+
+This backend was built with the assistance of **Freebuff** (an AI coding agent powered by Z.ai's GLM model), used for scaffolding, implementation, test-suite authoring, and iterative debugging. All assignment data was entered verbatim from the supplied brief; all business rules were implemented as deterministic code and verified by the six test suites — the AI assistant did not invent policies, data, or endpoints beyond the specification.
+
+---
+
+## Test Commands
+
+```bash
+npm run verify:data       # seed JSON validates; counts: 3 customers, 4 bookings, all policies
+npm run verify:services   # customer/booking/policy service contract checks
+npm run verify:engine     # every rule + boundaries (3h/5h, ₹1,500/₹2,000) + 3 scenarios
+npm run verify:agents     # intents, executor (incl. refusals), escalations, audit round-trip
+npm run verify:chat       # full orchestrator over in-process app (LLM disabled): 3 scenarios + edges
+npm run verify:api        # 14-item matrix over real HTTP (health → audit → actions)
+```
+
+All suites pass; `npm run build` and `npm run typecheck` are clean.

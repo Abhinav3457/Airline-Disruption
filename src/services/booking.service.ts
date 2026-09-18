@@ -18,7 +18,7 @@ import { getBookings } from '../data/store';
 
 import { normalizePnr } from '../utils/strings';
 
-/** All booking legs for a PNR (case-insensitive). Priya's PNR returns 2 legs. */
+/** All booking legs for a PNR (case-insensitive). Multi-leg PNRs return every leg. */
 export function getBookingsByPnr(pnr: string): Booking[] {
   const normalized = normalizePnr(pnr);
   if (normalized === '') return [];
@@ -28,7 +28,7 @@ export function getBookingsByPnr(pnr: string): Booking[] {
 
 /**
  * Find booking legs by flight number (case-insensitive exact match, e.g.
- * 'sk-118' -> SK-118). The label 'Return' matches Priya's return leg too.
+ * 'sk-118' -> SK-118). The informational label 'Return' matches return legs too.
  */
 export function getBookingByFlightNumber(flightNumber: string): Booking[] {
   const normalized = flightNumber.trim().toUpperCase();

@@ -23,7 +23,7 @@ import {
   evaluateLoyaltyBenefits,
 } from './policy.engine';
 
-import { detectIntent } from './intent.detector';
+import { WAIVER_ASK, detectIntent } from './intent.detector';
 import { executeAction } from './action.executor';
 import { escalate } from './escalation.handler';
 import { createAuditRecord } from '../services/audit.service';
@@ -97,6 +97,8 @@ function buildDeterministicReply(options: {
   booking: Booking | null;
   actions: OrchestratorAction[];
   escalation: EscalationResult | null;
+  /** True when a waiver mention lacks a parsable amount (adds a clarifying ask). */
+  waiverClarification?: boolean;
 }): string {
   const { decision, actions, escalation, booking } = options;
   const name = options.customerName ?? 'there';
@@ -209,6 +211,11 @@ function buildDeterministicReply(options: {
         );
       } else if (decision.eligibleActions.includes('waive_fare_difference')) {
         lines.push(`Good news, ${name} — I can waive the fare difference for you.`);
+      } else if (decision.status === 'clarification_required') {
+        lines.push(
+          decision.explanation,
+          "Could you tell me the amount you'd like waived?"
+        );
       } else {
         lines.push(decision.explanation);
       }
@@ -260,6 +267,12 @@ function buildDeterministicReply(options: {
       );
       break;
     }
+  }
+
+  if (options.waiverClarification) {
+    lines.push(
+      "Also, regarding waiving the fare difference: could you tell me the amount you're asking to waive?"
+    );
   }
 
   return lines.join(' ');
@@ -531,7 +544,25 @@ function runFareDifferencePipeline(
   entities: { waiverAmountInr?: number },
   pnr: string | undefined
 ): PipelineOutcome {
-  const requestedWaiver = entities.waiverAmountInr ?? 0;
+  // No amount -> never guess. Ask for the amount; nothing is granted.
+  if (entities.waiverAmountInr === undefined) {
+    return {
+      decision: {
+        status: 'clarification_required',
+        eligibleActions: [],
+        ineligibleActions: [],
+        requiresEscalation: false,
+        escalationReason: null,
+        policySources: [SOURCE_FARE],
+        explanation:
+          'Waiver requested without an amount; the customer must specify how much of the fare difference they want waived.',
+      },
+      policyUsed: [SOURCE_FARE],
+      actions: [],
+      escalation: null,
+    };
+  }
+  const requestedWaiver = entities.waiverAmountInr;
   // No fare difference is known from booking data; the waiver request itself
   // drives the decision (waiver must not exceed the difference).
   const fareDecision = evaluateFareDifference(requestedWaiver, requestedWaiver);
@@ -788,9 +819,24 @@ export async function handleChatMessage(options: {
     outcome.policyUsed = outcome.decision.policySources;
   }
 
-  // 3b. Meher's combined ask: fare waiver above ₹1,500 escalates even when
-  // delay remedies were already executed. Merge that escalation in.
+  // 3b. Combined asks: a fare waiver above ₹1,500 escalates even when
+  // delay remedies were already executed in the same turn. Merge it in.
+  // A waiver mention without a parsable amount is never ignored: it routes to
+  // fare-difference handling for a clarifying question (never silent, never
+  // an unauthorized grant).
   if (
+    intent !== 'fare_difference_request' &&
+    WAIVER_ASK.test(message) &&
+    intentResult.entities.waiverAmountInr === undefined
+  ) {
+    const waivedOutcome = runFareDifferencePipeline(
+      intentResult.entities,
+      customer.pnr
+    );
+    outcome.decision = waivedOutcome.decision;
+    outcome.policyUsed = [...new Set([...outcome.policyUsed, ...waivedOutcome.policyUsed])];
+    outcome.escalation = waivedOutcome.escalation;
+  } else if (
     intent !== 'fare_difference_request' &&
     intentResult.entities.waiverAmountInr !== undefined &&
     intentResult.entities.waiverAmountInr > ENGINE_RULES.maxWaiverWithoutApprovalInr
@@ -808,6 +854,10 @@ export async function handleChatMessage(options: {
   }
 
   // 4. Response generation: LLM phrasing when available, deterministic otherwise.
+  const waiverClarification =
+    intent !== 'fare_difference_request' &&
+    WAIVER_ASK.test(message) &&
+    intentResult.entities.waiverAmountInr === undefined;
   const fallbackText = buildDeterministicReply({
     intent,
     customerName: customer.name,
@@ -815,6 +865,7 @@ export async function handleChatMessage(options: {
     booking,
     actions: outcome.actions,
     escalation: outcome.escalation,
+    waiverClarification,
   });
 
   const llm = await phraseDecision({

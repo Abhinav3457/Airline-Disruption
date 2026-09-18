@@ -13,6 +13,13 @@ import type { IntentEntities, IntentResult } from '../types';
 import { normalizePnr } from '../utils/strings';
 
 /**
+ * Pattern for fare-waiver asks, exported so the orchestrator can detect a
+ * waiver mention even when another intent won the classification
+ * (e.g. 'delayed 6 hours, give me a hotel and waive the fee').
+ */
+export const WAIVER_ASK = /\bwaive\b|\bwaiver\b/i;
+
+/**
  * Ordered rule table: first match wins.
  * Specific intents are listed before general ones so that e.g.
  * 'issue a meal voucher for my delay' classifies as meal_voucher_request,
