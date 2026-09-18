@@ -29,7 +29,7 @@ function decisionToneFromText(decision: string) {
   return 'neutral' as const;
 }
 
-export function AuditPage() {
+export function AuditLogsPage() {
   const [filter, setFilter] = useState('');
   const [activePnr, setActivePnr] = useState<string | null>(null);
 
