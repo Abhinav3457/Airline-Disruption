@@ -8,6 +8,7 @@ import { z, type ZodType } from 'zod';
 
 import type {
   ActionLog,
+  AuditRecord,
   Booking,
   Customer,
   PolicyDocument,
@@ -143,3 +144,22 @@ export const actionLogSchema: ZodType<ActionLog> = z.object({
 });
 
 export const actionLogsSchema: ZodType<ActionLog[]> = z.array(actionLogSchema);
+
+// ---------------------------------------------------------------------------
+// Audit records (runtime conversation/action audit trail)
+// ---------------------------------------------------------------------------
+
+export const auditRecordSchema: ZodType<AuditRecord> = z.object({
+  id: z.uuid(),
+  pnr: z.string().regex(PNR_REGEX, 'Invalid PNR format'),
+  customer: z.string().min(1),
+  intent: z.string().min(1),
+  policyUsed: z.array(z.string().min(1)),
+  decision: z.string().min(1),
+  actions: z.array(z.string().min(1)),
+  /** null when no escalation occurred. */
+  escalation: z.string().nullable(),
+  timestamp: z.iso.datetime({ offset: true }),
+});
+
+export const auditLogsSchema: ZodType<AuditRecord[]> = z.array(auditRecordSchema);

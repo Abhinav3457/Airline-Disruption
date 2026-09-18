@@ -4,3 +4,7 @@ export * from './policy.types';
 export * from './action.types';
 export * from './agent.types';
 export * from './policy-engine.types';
+export * from './intent.types';
+export * from './execution.types';
+export * from './escalation.types';
+export * from './audit.types';

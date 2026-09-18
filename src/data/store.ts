@@ -11,6 +11,7 @@ import { z, type ZodType } from 'zod';
 
 import type {
   ActionLog,
+  AuditRecord,
   Booking,
   Customer,
   PolicyDocument,
@@ -19,16 +20,17 @@ import type {
 import {
   actionLogSchema,
   actionLogsSchema,
+  auditRecordSchema,
+  auditLogsSchema,
   bookingsSchema,
   customersSchema,
   policyDocumentSchema,
-} from './schemas';
-
-const DATA_FILES = {
+} from './schemas';const DATA_FILES = {
   customers: 'customers.json',
   bookings: 'bookings.json',
   policies: 'policies.json',
   actionLogs: 'action-logs.json',
+  auditLogs: 'audit-logs.json',
 } as const;
 
 /**
@@ -153,8 +155,7 @@ export function getActionLogs(): ActionLog[] {
 
 /**
  * Append one validated action-log entry and persist it to disk.
- * Throws if the entry fails schema validation — invalid audit entries are
- * never written.
+ * Throws if the entry fails schema validation — invalid entries are never written.
  */
 export function appendActionLog(entry: ActionLog): void {
   actionLogSchema.parse(entry); // fail fast before touching disk
@@ -163,4 +164,31 @@ export function appendActionLog(entry: ActionLog): void {
   const logs = getActionLogs();
   logs.push(entry);
   writeFileSync(filePath, `${JSON.stringify(logs, null, 2)}\n`, 'utf-8');
+}
+
+// ---------------------------------------------------------------------------
+// Audit records (runtime conversation audit trail -> audit-logs.json)
+// ---------------------------------------------------------------------------
+
+/** Current audit records (oldest first). */
+export function getAuditLogs(): AuditRecord[] {
+  const dataDir = resolveDataDir();
+  return loadJsonFile(
+    path.join(dataDir, DATA_FILES.auditLogs),
+    auditLogsSchema
+  );
+}
+
+/**
+ * Append one validated audit record and persist it to disk.
+ * Throws if the record fails schema validation — invalid audit records are
+ * never written.
+ */
+export function appendAuditRecord(record: AuditRecord): void {
+  auditRecordSchema.parse(record); // fail fast before touching disk
+
+  const filePath = path.join(resolveDataDir(), DATA_FILES.auditLogs);
+  const records = getAuditLogs();
+  records.push(record);
+  writeFileSync(filePath, `${JSON.stringify(records, null, 2)}\n`, 'utf-8');
 }

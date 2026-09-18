@@ -10,7 +10,7 @@ const outDir = path.resolve(__dirname, '..', 'dist', 'data');
 
 fs.mkdirSync(outDir, { recursive: true });
 
-const files = ['customers.json', 'bookings.json', 'policies.json', 'action-logs.json'];
+const files = ['customers.json', 'bookings.json', 'policies.json', 'action-logs.json', 'audit-logs.json'];
 
 for (const file of files) {
   fs.copyFileSync(path.join(srcDir, file), path.join(outDir, file));

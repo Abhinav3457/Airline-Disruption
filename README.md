@@ -48,6 +48,7 @@ npm start
 | `npm run verify:data`     | Validate seed data against schemas & fixtures  |
 | `npm run verify:services` | Exercise all service functions against fixtures |
 | `npm run verify:engine`    | Test the deterministic policy engine & boundaries   |
+| `npm run verify:agents`    | Test intent, executor, escalation, audit modules    |
 
 ## Services
 
@@ -95,16 +96,21 @@ server/
 │   │   ├── customers.json    # 3 customers
 │   │   ├── bookings.json     # 4 bookings
 │   │   ├── policies.json     # cancellation/delay/refund/fare/loyalty rules
-│   │   ├── action-logs.json  # runtime audit trail (starts empty)
+│   │   ├── action-logs.json  # runtime action trail (starts empty)
+│   │   ├── audit-logs.json   # conversation audit trail (starts empty)
 │   │   ├── schemas.ts        # zod schemas pinned to domain types
 │   │   └── store.ts          # typed loaders + PNR lookups
 │   ├── types/         # Shared TypeScript types (customer/booking/policy/action/agent)
 │   ├── services/      # Business logic
 │   │   ├── customer.service.ts  # PNR/name lookups, enriched profiles
 │   │   ├── booking.service.ts   # leg lookups, disruption & status summaries
-│   │   └── policy.service.ts    # policy envelopes { policyId, source, details }
+│   │   ├── policy.service.ts    # policy envelopes { policyId, source, details }
+│   │   └── audit.service.ts     # audit record persistence & queries
 │   ├── agents/        # LLM agent logic (Groq) (TODO)
-│   │   └── policy.engine.ts     # deterministic eligibility decisions
+│   │   ├── policy.engine.ts     # deterministic eligibility decisions
+│   │   ├── intent.detector.ts   # rule-based intent + entity extraction
+│   │   ├── action.executor.ts   # policy-gated simulated actions
+│   │   └── escalation.handler.ts# human escalation routing
 │   ├── controllers/   # Request handlers
 │   ├── routes/        # Express routers
 │   ├── middleware/    # Custom middleware (TODO)
@@ -147,6 +153,25 @@ Enforced boundaries: exactly 3h is *not* "more than 3" (voucher only); exactly
 of exactly ₹1,500 is allowed while anything above needs supervisor approval;
 non-original refund methods are escalated; non-airline-caused disruptions get
 no exceptions; flight rebooking details are never invented.
+
+## Agent Support Modules
+
+- **intent.detector** — rule-based classification into 12 intents
+  (`flight_status`, `cancellation_support`, `refund_request`,
+  `rebooking_request`, `delay_compensation`, `meal_voucher_request`,
+  `lounge_request`, `hotel_request`, `fare_difference_request`,
+  `upgrade_request`, `legal_complaint`, `unknown`) with entity extraction
+  (PNR, flight number, payment method, ₹ amounts). Detection never overrides
+  policy.
+- **action.executor** — simulated execution of the five allowed actions,
+  each gated by the policy engine; refusals are recorded as `failed` with the
+  policy reason. Every record: unique id, PNR, action, status, timestamp,
+  reason, `simulated: true`.
+- **escalation.handler** — deterministic trigger → priority routing
+  (legal/formal → high, money-related → medium, unclear → low) with status
+  `escalated_to_human`.
+- **audit.service** — `createAuditRecord` / `getAuditRecordsByPnr` /
+  `getAllAuditRecords`, zod-validated, persisted to `src/data/audit-logs.json`.
 
 ## Roadmap (not yet implemented)
 
