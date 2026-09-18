@@ -85,6 +85,19 @@ export async function apiGet<T>(url: string, timeoutMs?: number): Promise<T> {
   }
 }
 
+/**
+ * GET that returns the raw body. Needed for the one endpoint that does not
+ * use the success envelope: GET /health answers { status, service, … }.
+ */
+export async function apiGetRaw<T>(url: string, timeoutMs?: number): Promise<T> {
+  try {
+    const response = await apiClient.get<T>(url, { timeout: timeoutMs });
+    return response.data;
+  } catch (error) {
+    normalizeError(error);
+  }
+}
+
 /** POST that unwraps the success envelope. */
 export async function apiPost<T>(
   url: string,

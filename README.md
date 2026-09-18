@@ -412,3 +412,60 @@ npm run verify:api        # 14-item matrix over real HTTP (health → audit → 
 ```
 
 All suites pass; `npm run build` and `npm run typecheck` are clean.
+
+---
+
+# 🖥️ Frontend — Ops Console (`frontend/`)
+
+A React + Vite + TypeScript dashboard for the resolution agent. **Dark airline-operations design**: charcoal/matte surfaces, clean cards, subtle borders, responsive layout, no unnecessary animations. The backend was not modified in any way.
+
+## Stack
+
+React 19 · Vite · TypeScript (strict) · Tailwind CSS v4 · Axios · React Router · Lucide icons
+
+## Structure
+
+```
+frontend/src/
+├── components/   # Button, Card, Badge, Loading, ErrorState, Toast (reusable)
+├── pages/        # Dashboard, Customers, CustomerDetail, Chat, Policies, Audit, 404
+├── services/     # apiClient (axios + ApiError) + typed functions for all 8 endpoints
+├── hooks/        # useApi (fetch with reload), useToasts (provider + hook)
+├── types/        # mirrored backend contracts (envelope, customer, booking, policy, chat, audit)
+├── layouts/      # MainLayout (sidebar nav + live backend health pill)
+└── utils/        # formatting helpers
+```
+
+## Running
+
+```bash
+# terminal 1 — backend
+cd <project root> && npm run dev          # :5000
+
+# terminal 2 — frontend
+cd frontend && npm install && npm run dev # :3000
+```
+
+Configuration lives in `frontend/.env` (see `.env.example`):
+
+```
+VITE_API_BASE_URL=http://localhost:5000/api
+```
+
+## Pages
+
+| Route | Purpose |
+|---|---|
+| `/` | Dashboard — API status, dataset counts, rule highlights, quick actions |
+| `/customers` | Customer register → `/customers/:pnr` profile with booking legs |
+| `/chat` | Agent chat — PNR + message, conversation thread, policy decision, executed actions, escalation panel |
+| `/policies` | All 7 policy categories exactly as served by the backend |
+| `/audit` | Full audit trail with optional PNR filter |
+
+The header pill probes `GET /api/health` every 30 s: **API healthy / Backend offline / Checking…**
+
+## Verified
+
+- `npm run build` (tsc + vite) — clean, zero errors
+- Headless-Chrome rendered-DOM checks against the live backend: customers table shows all 3 seeded customers, policies render all 7 envelopes, dashboard health pill reads **API healthy**, chat and audit pages mount correctly
+- Backend `npm run typecheck` re-run after frontend work: still clean (untouched)

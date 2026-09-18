@@ -3,7 +3,7 @@
  * Endpoint paths are relative to VITE_API_BASE_URL (…/api).
  */
 
-import { apiGet, apiPost } from './apiClient';
+import { apiGet, apiGetRaw, apiPost } from './apiClient';
 
 import type {
   AllPolicies,
@@ -19,7 +19,7 @@ import type {
 // GET /health ----------------------------------------------------------------
 
 export function getHealth(timeoutMs?: number): Promise<HealthInfo> {
-  return apiGet<HealthInfo>('/health', timeoutMs);
+  return apiGetRaw<HealthInfo>('/health', timeoutMs);
 }
 
 // GET /customers · GET /customers/:pnr ---------------------------------------

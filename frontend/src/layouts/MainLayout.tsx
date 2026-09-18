@@ -34,7 +34,7 @@ function HealthPill() {
   useEffect(() => {
     let cancelled = false;
     const probe = () =>
-      getHealth(5_000)
+      getHealth()
         .then((info) => {
           if (!cancelled) {
             setHealth(info);
