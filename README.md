@@ -439,25 +439,39 @@ frontend/src/
 ## Running
 
 ```bash
-# terminal 1 — backend
-cd <project root> && npm run dev          # :5000
+# terminal 1 — backend (must be up first; the frontend probes GET /api/health)
+cd <project root> && npm run dev          # http://localhost:5000
 
 # terminal 2 — frontend
-cd frontend && npm install && npm run dev # :3000
+cd frontend && npm install && npm run dev # http://localhost:3000
 ```
 
-Configuration lives in `frontend/.env` (see `.env.example`):
+Production build: `cd frontend && npm run build && npm run preview`.
 
-```
-VITE_API_BASE_URL=http://localhost:5000/api
-```
+### Backend connection
+
+`frontend/src/services/apiClient.ts` creates an axios instance from `VITE_API_BASE_URL`. Every failure is normalized to an `ApiError` carrying the backend's `code`/`message` (network down → "Cannot reach the server. Is the backend running on port 5000?", shown as a toast). The header pill in the UI probes `GET /api/health` every 30 s and shows **Backend connected / Backend offline / Checking…**. CORS on the backend already allows the Vite origin.
+
+### Demo scenario instructions
+
+1. Open **http://localhost:3000/agent**.
+2. Pick a customer from the selector (or use the **Quick scenarios** buttons — Priya / Arvind / Meher — which select the right customer automatically and send the exact ask below).
+3. Watch the chat (Enter sends, Shift+Enter adds a newline) and read the verdict in the right rail: decision summary, detected intent, booking details, **Allowed actions** (green) vs **Rejected requests** (red), executed actions labeled *completed · simulated*, escalation status, policy used, and the audit ID (also visible live under `/audit`).
+
+| Scenario | Exact message | Expected backend verdict |
+|---|---|---|
+| **Priya** (Gold, SK4821X) | "Flight SK-204 was cancelled. I want a full cash refund and a free business-class upgrade on my return flight." | Cancellation recognized (airline-caused) · refund **initiated** (original payment method, within 7 business days) · **no business-class upgrade** — fare difference stays with the customer · no escalation required |
+| **Arvind** (Silver, TR1190B) | "My flight is delayed by 4 hours and I missed an important meeting. I want a hotel." | 4-hour delay recognized · meal voucher + lounge access **completed** · **hotel not allowed** (threshold is strictly > 5 h) · clear refusal in the reply |
+| **Meher** (Platinum, WL7742) | "My flight is delayed by 6 hours. Give me a full-night hotel and waive the ₹2,000 fare difference." | 6-hour delay recognized · meal voucher + lounge + **delayed-hours-only hotel** completed · **full-night hotel rejected** (scope stated in reply) · **₹2,000 waiver escalated** (`fare_waiver_above_limit`, medium priority, supervisor required) |
+
+All verdicts come from the backend's deterministic policy engine; the UI only renders them.
 
 ## Pages
 
 | Route | Purpose |
 |---|---|
 | `/` | Dashboard — API status, dataset counts, rule highlights, quick actions |
-| `/agent` | **Customer Agent** — customer selector (loads from `GET /api/customers`), full booking context (name, tier, PNR, contact, flight, route, date, scheduled/updated departure, disruption status, previous complaints), chat thread, policy decision + executed actions + escalation panels |
+| `/agent` | **Customer Resolution Agent** (primary screen) — two columns. **Left:** selected customer info (name, tier, PNR, contact, flight, route, date, scheduled/updated departure, disruption status, previous complaints), chat history with customer/agent bubbles, typing indicator, auto-scroll, input + send. **Right:** decision summary, detected intent, booking details, allowed vs rejected actions, executed (simulated) actions, escalation status, policy used, audit ID. Quick-scenario buttons for Priya / Arvind / Meher auto-select the right customer and send the exact scenario ask. All data from the backend; the frontend never decides policy.
 | `/customers` | Customer register → `/customers/:pnr` profile with booking legs |
 | `/bookings` | All booking legs across the register with disruption details |
 | `/policies` | All 7 policy categories exactly as served by the backend |

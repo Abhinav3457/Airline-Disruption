@@ -66,7 +66,13 @@ export function DashboardPage() {
         />
         <StatCard
           label="Policy categories"
-          value={policies.loading ? '…' : policies.data ? '7' : '—'}
+          value={
+            policies.loading
+              ? '…'
+              : policies.data
+                ? String(Object.keys(policies.data).length)
+                : '—'
+          }
           hint="cancellation → prohibited"
         />
       </div>

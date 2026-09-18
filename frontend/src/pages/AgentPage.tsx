@@ -165,6 +165,8 @@ export function AgentPage() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
+  /** Reflected `sending` state for synchronous duplicate guards. */
+  const sendingRef = useRef(false);
   const [latest, setLatest] = useState<ChatData | null>(null);
   /** Scenario queued while the customer switch is applied. */
   const [pendingScenario, setPendingScenario] = useState<{
@@ -183,6 +185,8 @@ export function AgentPage() {
   /** Shared sender for typed messages and scenario runs. */
   const sendMessage = useCallback(
     async (text: string, pnr: string) => {
+      if (sendingRef.current) return; // hard guard against duplicate submissions
+      sendingRef.current = true;
       setSending(true);
       try {
         const data = await postAgentChat({ pnr, message: text });
@@ -200,6 +204,7 @@ export function AgentPage() {
             : 'The agent could not be reached.'
         );
       } finally {
+        sendingRef.current = false;
         setSending(false);
       }
     },
@@ -227,9 +232,10 @@ export function AgentPage() {
     if (element) element.scrollTop = element.scrollHeight;
   }, [messages, sending]);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  /** Shared submit path for the form and the Enter key. */
+  async function submitMessage() {
     const trimmedMessage = input.trim();
+    if (sending) return; // duplicate-submission guard
     if (!selectedPnr) {
       pushToast('error', 'Select a customer first.');
       return;
@@ -240,6 +246,19 @@ export function AgentPage() {
     }
     setInput('');
     await sendMessage(trimmedMessage, selectedPnr);
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    await submitMessage();
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Enter sends; Shift+Enter inserts a newline.
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      void submitMessage();
+    }
   }
 
   function runScenario(scenario: (typeof SCENARIOS)[number]) {
@@ -384,7 +403,7 @@ export function AgentPage() {
                         }`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg px-3.5 py-2.5 text-sm ${
+                          className={`max-w-[80%] rounded-lg px-3.5 py-2.5 text-sm break-words ${
                             message.role === 'user'
                               ? 'bg-ops-accent/20 text-ops-text'
                               : 'border border-ops-line bg-ops-800/70 text-ops-text'
@@ -402,12 +421,15 @@ export function AgentPage() {
                 onSubmit={handleSubmit}
                 className="border-t border-ops-line px-4 py-3"
               >
-                <div className="flex items-center gap-2">
-                  <input
+                <div className="flex items-end gap-2">
+                  <textarea
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
-                    placeholder="Describe the issue…"
-                    className="flex-1 rounded-md border border-ops-line bg-ops-800 px-3 py-2 text-sm text-ops-text placeholder:text-ops-faint focus:border-ops-accent focus:outline-none"
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    disabled={sending}
+                    placeholder="Describe the issue… (Enter to send, Shift+Enter for a new line)"
+                    className="max-h-32 min-h-[42px] flex-1 resize-none rounded-md border border-ops-line bg-ops-800 px-3 py-2 text-sm text-ops-text placeholder:text-ops-faint focus:border-ops-accent focus:outline-none disabled:opacity-60"
                   />
                   <Button type="submit" disabled={sending || !selectedPnr}>
                     <Send className="h-3.5 w-3.5" aria-hidden />

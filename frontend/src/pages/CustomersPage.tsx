@@ -63,7 +63,11 @@ export function CustomersPage() {
                     <td className="px-4 py-3">
                       {customer.travelHistory.flightsLast12Months}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="max-w-[240px] truncate px-4 py-3" title={
+                      customer.previousComplaints
+                        .map((complaint) => complaint.issue)
+                        .join(', ')
+                    }>
                       {customer.previousComplaints.length === 0 ? (
                         <span className="text-ops-faint">None</span>
                       ) : (
