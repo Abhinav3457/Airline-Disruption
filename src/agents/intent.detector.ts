@@ -96,7 +96,7 @@ const RULES: Array<{
   {
     intent: 'cancellation_support',
     confidence: 0.88,
-    patterns: [/\bcancelled\b/i, /\bcancellation\b/i, /\bmy flight is cancelled\b/i],
+    patterns: [/\bcancell?ed\b/i, /\bcancellation\b/i], // UK + US spelling
   },
   {
     intent: 'delay_compensation',

@@ -11,7 +11,7 @@ A production-structured Express + TypeScript backend for an AI-powered airline c
 | | |
 |---|---|
 | **Domain** | Airline disruption support (cancellations, delays, refunds, rebooking) |
-| **Interface** | REST API only — no frontend in this repository |
+| **Interface** | REST API + React ops console (`frontend/`, documented below) |
 | **LLM** | Groq (`groq-sdk`), optional — the system is fully functional without it |
 | **Data** | Fixed seed dataset: 3 customers, 4 bookings, policy documents |
 | **Persistence** | JSON files (`action-logs.json`, `audit-logs.json`) — deliberately simple |
@@ -261,7 +261,7 @@ Escalations never suppress already-granted remedies — if a delay entitlement w
 
 ## 12. API Endpoints
 
-Uniform envelope: `{ "success": true, "data": … }` or `{ "success": false, "error": { "code", "message", "issues?" } }`. No stack traces in responses.
+Uniform envelope: `{ "success": true, "data": … }` or `{ "success": false, "error": { "code", "message", "issues?" } }`. No stack traces in responses. The single exception is `GET /api/health`, which returns a bare `{ "status": "ok", … }` object so load balancers and uptime probes can consume it directly.
 
 | Method | Endpoint | Description | Codes |
 |---|---|---|---|

@@ -8,7 +8,7 @@
 
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 // Force deterministic fallback mode before importing app modules.
@@ -53,12 +53,14 @@ async function request(
 }
 
 async function main(): Promise<void> {
-  // Clean audit log for deterministic assertions.
-  writeFileSync(
-    path.resolve(process.cwd(), 'src', 'data', 'audit-logs.json'),
-    '[]\n',
-    'utf-8'
-  );
+  // Clean logs for deterministic assertions — but back them up first so the
+  // run never wipes committed demo history or local runtime data.
+  const auditFile = path.resolve(process.cwd(), 'src', 'data', 'audit-logs.json');
+  const actionFile = path.resolve(process.cwd(), 'src', 'data', 'action-logs.json');
+  const auditBackup = readFileSync(auditFile, 'utf-8');
+  const actionBackup = readFileSync(actionFile, 'utf-8');
+  writeFileSync(auditFile, '[]\n', 'utf-8');
+  writeFileSync(actionFile, '[]\n', 'utf-8');
 
   const app = createApp();
   const server = http.createServer(app);
@@ -149,6 +151,9 @@ async function main(): Promise<void> {
       arvindChat.body.data.actions.some((a: any) => a.action === 'issue_meal_voucher' && a.status === 'completed') &&
         arvindChat.body.data.actions.some((a: any) => a.action === 'issue_lounge_access' && a.status === 'completed') &&
         arvindChat.body.data.actions.every((a: any) => a.action !== 'arrange_delayed_hours_hotel'));
+    check('decision marks hotel refused (partially_eligible + ineligibleActions)',
+      arvindChat.body.data.decision.status === 'partially_eligible' &&
+        arvindChat.body.data.decision.ineligibleActions.includes('arrange_delayed_hours_hotel'));
 
     // ---------------------------------------------------------------
     console.log('\n=== 8. Meher 6-hour delay (chat) ===');
@@ -283,6 +288,9 @@ async function main(): Promise<void> {
                         !JSON.stringify(body).includes('    at ')));
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
+    // Restore pre-run log contents (runs are non-destructive).
+    writeFileSync(auditFile, auditBackup, 'utf-8');
+    writeFileSync(actionFile, actionBackup, 'utf-8');
   }
 
   console.log('\n──────────────────────────────');

@@ -99,6 +99,8 @@ function buildDeterministicReply(options: {
   escalation: EscalationResult | null;
   /** True when a waiver mention lacks a parsable amount (adds a clarifying ask). */
   waiverClarification?: boolean;
+  /** True when the message also asks for an upgrade/cabin change (refund/rebook turns). */
+  upgradeMentioned?: boolean;
 }): string {
   const { decision, actions, escalation, booking } = options;
   const name = options.customerName ?? 'there';
@@ -139,6 +141,11 @@ function buildDeterministicReply(options: {
           `I've initiated your full refund, ${name}.`,
           'It will be processed to your original payment method within 7 business days.'
         );
+        if (options.upgradeMentioned) {
+          lines.push(
+            "A free upgrade isn't something I can approve — a voluntary higher-fare flight requires paying the fare difference."
+          );
+        }
       } else if (decision.status === 'escalation_required') {
         lines.push(
           `Refunds can only go to the original payment method, ${name}.`,
@@ -157,6 +164,11 @@ function buildDeterministicReply(options: {
           `You're set for free rebooking, ${name}.`,
           'You can be rebooked on the next available flight at no charge within 24 hours.'
         );
+        if (options.upgradeMentioned) {
+          lines.push(
+            "A free upgrade isn't something I can approve — a voluntary higher-fare flight requires paying the fare difference."
+          );
+        }
       } else {
         lines.push(decision.explanation);
       }
@@ -168,6 +180,12 @@ function buildDeterministicReply(options: {
     case 'hotel_request':
     case 'delay_compensation': {
       const completed = actions.filter((a) => a.status === 'completed');
+      const hotelGranted = completed.some(
+        (a) => a.action === 'arrange_delayed_hours_hotel'
+      );
+      const loungeGranted = completed.some(
+        (a) => a.action === 'issue_lounge_access'
+      );
       if (completed.length > 0) {
         const granted: string[] = [];
         for (const action of completed) {
@@ -180,7 +198,9 @@ function buildDeterministicReply(options: {
         lines.push(
           `I'm sorry for the disruption, ${name}. I've arranged ${joinNice(granted)}.`
         );
-        if (options.intent === 'hotel_request') {
+        // Scope note only when a hotel was actually arranged — never imply
+        // a hotel exists when the request was refused.
+        if (hotelGranted) {
           lines.push(
             'Please note the hotel covers the delayed hours only — a full-night stay isn\'t something I can authorize.'
           );
@@ -191,6 +211,26 @@ function buildDeterministicReply(options: {
         );
       } else {
         lines.push(decision.explanation);
+      }
+      // Explicit refusal for the specifically-requested remedy when denied,
+      // with the exact policy threshold so the customer knows why.
+      if (
+        options.intent === 'hotel_request' &&
+        !hotelGranted &&
+        decision.ineligibleActions.includes('arrange_delayed_hours_hotel')
+      ) {
+        lines.push(
+          `A hotel isn't available for this delay, ${name} — hotel accommodation applies only to delays of more than 5 hours.`
+        );
+      }
+      if (
+        options.intent === 'lounge_request' &&
+        !loungeGranted &&
+        decision.ineligibleActions.includes('issue_lounge_access')
+      ) {
+        lines.push(
+          `Lounge access isn't available for this delay, ${name} — it applies only to delays of more than 3 hours.`
+        );
       }
       break;
     }
@@ -302,8 +342,22 @@ function toAction(action: ReturnType<typeof executeAction>): OrchestratorAction 
 /**
  * Delay remedies pipeline: executes every entitled remedy (meal voucher,
  * lounge access, delayed-hours hotel) for a delayed booking.
+ *
+ * `requestedRemedy` is the specific remedy the customer named (derived from
+ * their intent). When it is NOT entitled, it is reported in
+ * `ineligibleActions` (and the status becomes `partially_eligible` if other
+ * remedies were still granted) so callers — and the frontend's
+ * "Rejected requests" panel — can show an explicit refusal instead of
+ * silently dropping the ask.
  */
-function runDelayPipeline(booking: Booking): PipelineOutcome {
+function runDelayPipeline(
+  booking: Booking,
+  requestedRemedy:
+    | 'issue_meal_voucher'
+    | 'issue_lounge_access'
+    | 'arrange_delayed_hours_hotel'
+    | null
+): PipelineOutcome {
   const actions: OrchestratorAction[] = [];
 
   if (booking.status !== 'Delayed') {
@@ -366,17 +420,45 @@ function runDelayPipeline(booking: Booking): PipelineOutcome {
   if (comp.loungeAccess) eligibleActions.push('issue_lounge_access');
   if (comp.hotelForDelayedHours) eligibleActions.push('arrange_delayed_hours_hotel');
 
-  const explanation = comp.hotelForDelayedHours
+  // Was the specifically-requested remedy refused? Say so explicitly.
+  const entitled: Record<string, boolean> = {
+    issue_meal_voucher: comp.mealVoucher,
+    issue_lounge_access: comp.loungeAccess,
+    arrange_delayed_hours_hotel: comp.hotelForDelayedHours,
+  };
+  const refused =
+    requestedRemedy !== null && !entitled[requestedRemedy]
+      ? requestedRemedy
+      : null;
+  const ineligibleActions: PolicyDecision['ineligibleActions'] = refused
+    ? [refused]
+    : [];
+
+  let explanation = comp.hotelForDelayedHours
     ? 'Delay exceeds 5 hours: meal voucher, lounge access, and hotel for the delayed hours only.'
     : comp.loungeAccess
       ? 'Delay exceeds 3 hours: meal voucher and lounge access.'
       : 'Delay entitles the customer to a meal voucher.';
+  if (refused === 'arrange_delayed_hours_hotel') {
+    explanation +=
+      ' Hotel accommodation was refused: it applies only to delays of more than 5 hours.';
+  } else if (refused === 'issue_lounge_access') {
+    explanation +=
+      ' Lounge access was refused: it applies only to delays of more than 3 hours.';
+  } else if (refused === 'issue_meal_voucher') {
+    explanation += ' No meal-voucher entitlement for this delay length.';
+  }
 
   return {
     decision: {
-      status: eligibleActions.length > 0 ? 'eligible' : 'ineligible',
+      status:
+        eligibleActions.length > 0
+          ? ineligibleActions.length > 0
+            ? 'partially_eligible'
+            : 'eligible'
+          : 'ineligible',
       eligibleActions,
-      ineligibleActions: [],
+      ineligibleActions,
       requiresEscalation: false,
       escalationReason: null,
       policySources: [SOURCE_DELAY],
@@ -386,6 +468,29 @@ function runDelayPipeline(booking: Booking): PipelineOutcome {
     actions,
     escalation: null,
   };
+}
+
+/**
+ * The specific delay remedy a delay-family intent names, if any.
+ * `delay_compensation` is a general ask, so it maps to no single remedy.
+ */
+function requestedRemedyForIntent(
+  intent: string
+):
+  | 'issue_meal_voucher'
+  | 'issue_lounge_access'
+  | 'arrange_delayed_hours_hotel'
+  | null {
+  switch (intent) {
+    case 'meal_voucher_request':
+      return 'issue_meal_voucher';
+    case 'lounge_request':
+      return 'issue_lounge_access';
+    case 'hotel_request':
+      return 'arrange_delayed_hours_hotel';
+    default:
+      return null;
+  }
 }
 
 /** Refund pipeline: airline-caused cancellation + original payment method only. */
@@ -713,7 +818,7 @@ export async function handleChatMessage(options: {
     case 'lounge_request':
     case 'hotel_request':
     case 'delay_compensation':
-      outcome = runDelayPipeline(booking);
+      outcome = runDelayPipeline(booking, requestedRemedyForIntent(intent));
       break;
     case 'fare_difference_request':
       outcome = runFareDifferencePipeline(intentResult.entities, customer.pnr);
@@ -858,6 +963,11 @@ export async function handleChatMessage(options: {
     intent !== 'fare_difference_request' &&
     WAIVER_ASK.test(message) &&
     intentResult.entities.waiverAmountInr === undefined;
+  const upgradeMentioned =
+    (intent === 'refund_request' || intent === 'rebooking_request') &&
+    /\bupgrade\b|\bbusiness[-\s]?class\b|\bfirst[-\s]?class\b|\bpremium\b/i.test(
+      message
+    );
   const fallbackText = buildDeterministicReply({
     intent,
     customerName: customer.name,
@@ -866,6 +976,7 @@ export async function handleChatMessage(options: {
     actions: outcome.actions,
     escalation: outcome.escalation,
     waiverClarification,
+    upgradeMentioned,
   });
 
   const llm = await phraseDecision({
