@@ -1,8 +1,20 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, Plane } from 'lucide-react';
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Bot,
+  Crown,
+  History,
+  Mail,
+  Phone,
+  Plane,
+  Ticket,
+} from 'lucide-react';
 
 import {
   Badge,
+  Button,
   Card,
   CardBody,
   CardHeader,
@@ -24,141 +36,222 @@ export function CustomerDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        to="/customers"
-        className="inline-flex items-center gap-1.5 text-sm text-ops-muted transition-colors hover:text-ops-text"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to customers
-      </Link>
+      {/* Back link */}
+      <div>
+        <Link
+          to="/customers"
+          className="inline-flex items-center gap-2 rounded-lg bg-slate-900 border border-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          <span>Back to Passenger Directory</span>
+        </Link>
+      </div>
 
       {loading ? (
-        <Loading label="Loading profile…" />
+        <Loading label="Retrieving passenger dossier…" />
       ) : error ? (
         <ErrorState message={error.message} code={error.code} onRetry={reload} />
       ) : data ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Profile column */}
-          <Card>
-            <CardHeader title="Customer" meta={`GET /api/customers/${pnr}`} />
-            <CardBody className="space-y-4">
-              <div>
-                <div className="text-lg font-semibold">{data.name}</div>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge tone={loyaltyTone(data.loyaltyTier)}>
-                    {data.loyaltyTier}
-                  </Badge>
-                  <span className="font-mono text-xs text-ops-muted">
-                    PNR {data.pnr}
+          {/* VIP Loyalty Membership Card & Profile */}
+          <div className="space-y-5">
+            {/* VIP Card */}
+            <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-950 p-5 sm:p-6 shadow-2xl backdrop-blur-xl">
+              <div className="pointer-events-none absolute -right-10 -bottom-10 h-36 w-36 rounded-full bg-indigo-500/10 blur-2xl" />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-indigo-300">
+                  <Crown className="h-5 w-5 text-amber-400" />
+                  <span className="text-xs font-mono font-bold tracking-wider uppercase">
+                    AeroResolve Club
                   </span>
+                </div>
+                <Badge tone={loyaltyTone(data.loyaltyTier)} size="md">
+                  {data.loyaltyTier}
+                </Badge>
+              </div>
+
+              <div className="mt-6 space-y-1">
+                <div className="text-2xl font-bold text-white tracking-tight">
+                  {data.name}
+                </div>
+                <div className="font-mono text-xs text-sky-400">
+                  PNR RECORD: {data.pnr}
                 </div>
               </div>
 
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-ops-muted">Email</dt>
-                  <dd className="text-right">{data.email}</dd>
+              <div className="mt-6 pt-4 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-xs text-slate-300">
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-slate-500">
+                    12-Mo Flights
+                  </div>
+                  <div className="text-lg font-mono font-bold text-white mt-0.5">
+                    {data.travelHistory.flightsLast12Months}
+                  </div>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-ops-muted">Phone</dt>
-                  <dd className="text-right">{data.phone}</dd>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-slate-500">
+                    Member Status
+                  </div>
+                  <div className="text-emerald-400 font-semibold mt-0.5">
+                    Active &amp; Verified
+                  </div>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-ops-muted">Flights (12 mo)</dt>
-                  <dd>{data.travelHistory.flightsLast12Months}</dd>
-                </div>
-              </dl>
+              </div>
+            </div>
 
-              <div>
-                <div className="text-xs font-medium tracking-wide text-ops-muted uppercase">
-                  Previous complaints
+            {/* Contact details */}
+            <Card>
+              <CardHeader title="Passenger Contact" />
+              <CardBody className="space-y-3 text-xs text-slate-300">
+                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Mail className="h-3.5 w-3.5 text-sky-400" />
+                    <span>Email:</span>
+                  </div>
+                  <span className="font-medium text-white truncate">{data.email}</span>
                 </div>
+                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Phone className="h-3.5 w-3.5 text-sky-400" />
+                    <span>Phone:</span>
+                  </div>
+                  <span className="font-medium text-white">{data.phone}</span>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Quick Copilot Launch CTA */}
+            <Link to={`/agent?pnr=${data.pnr}`} className="block">
+              <Button variant="primary" size="lg" className="w-full">
+                <Bot className="h-4 w-4" />
+                <span>Launch Resolution Copilot</span>
+              </Button>
+            </Link>
+
+            {/* Historical Complaints */}
+            <Card>
+              <CardHeader
+                title="Complaint History"
+                icon={<History className="h-4 w-4 text-sky-400" />}
+                meta={`${data.previousComplaints.length} records`}
+              />
+              <CardBody>
                 {data.previousComplaints.length === 0 ? (
-                  <p className="mt-1 text-sm text-ops-faint">None</p>
+                  <p className="text-xs text-slate-500 italic py-2 text-center">
+                    Clean record — no prior reported disruptions or complaints.
+                  </p>
                 ) : (
-                  <ul className="mt-1.5 space-y-2">
+                  <ul className="space-y-2.5">
                     {data.previousComplaints.map((complaint) => (
                       <li
                         key={complaint.issue}
-                        className="rounded-md border border-ops-line bg-ops-800/50 px-3 py-2 text-sm"
+                        className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-xs space-y-1"
                       >
-                        <div>{complaint.issue}</div>
-                        <div className="text-xs text-ops-muted">
-                          Resolved: {complaint.resolution}
+                        <div className="font-semibold text-white">{complaint.issue}</div>
+                        <div className="text-slate-400 flex items-center gap-1.5 pt-1 border-t border-slate-800/80">
+                          <span className="text-slate-500">Resolution:</span>
+                          <span className="text-emerald-400 font-medium">{complaint.resolution}</span>
                         </div>
                       </li>
                     ))}
                   </ul>
                 )}
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          </div>
 
           {/* Bookings column */}
-          <div className="space-y-4 lg:col-span-2">
-            <Card>
+          <div className="space-y-5 lg:col-span-2">
+            <Card className="overflow-hidden border-slate-800 shadow-2xl">
               <CardHeader
-                title="Booking legs"
-                meta={`${data.bookings.length} legs · GET /api/customers/${pnr}/bookings`}
+                title="Registered Booking Legs"
+                icon={<Ticket className="h-4 w-4 text-sky-400" />}
+                meta={`${data.bookings.length} Flights on Record`}
               />
-              <div className="divide-y divide-ops-line">
+              <div className="divide-y divide-slate-800/80">
                 {data.bookings.map((booking) => (
                   <div
                     key={`${booking.pnr}-${booking.flight}-${booking.date}`}
-                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
+                    className="p-5 hover:bg-slate-800/30 transition-colors space-y-4"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-ops-accent/10">
-                        <Plane className="h-4 w-4 text-ops-accent" aria-hidden />
-                      </span>
-                      <div>
-                        <div className="text-sm font-medium">
-                          {booking.flight} · {booking.route.from} →{' '}
-                          {booking.route.to}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400">
+                          <Plane className="h-5 w-5 transform -rotate-45" />
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-ops-muted">
-                          <MapPin className="h-3 w-3" aria-hidden />
-                          {formatDate(booking.date)}
-                          <span className="text-ops-faint">·</span>
-                          <Clock className="h-3 w-3" aria-hidden />
-                          dep {booking.scheduledDeparture}
+                        <div>
+                          <div className="font-mono font-bold text-lg text-white">
+                            {booking.flight}
+                          </div>
+                          <div className="text-xs text-slate-400 flex items-center gap-2">
+                            <span>{booking.route.from} ➔ {booking.route.to}</span>
+                            <span>·</span>
+                            <span>{formatDate(booking.date)}</span>
+                          </div>
                         </div>
                       </div>
+
+                      <div className="flex items-center gap-2">
+                        <Badge tone={bookingStatusTone(booking.status)} pulse={booking.status !== 'Unaffected'} size="md">
+                          {booking.status.toUpperCase()}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <Badge tone={bookingStatusTone(booking.status)}>
-                        {booking.status}
-                      </Badge>
-                      {booking.status === 'Delayed' ? (
-                        <div className="mt-1 text-xs text-ops-muted">
-                          {booking.delayHours}h delay · new dep{' '}
-                          {booking.newDeparture}
+
+                    {/* Flight Timeline details */}
+                    <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-950/60 border border-slate-800/80 p-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="text-slate-500 font-bold uppercase text-[10px]">
+                          Scheduled Departure
                         </div>
-                      ) : null}
-                      {booking.status === 'Cancelled' ? (
-                        <div className="mt-1 text-xs text-ops-muted">
-                          {booking.cancellationReason}
+                        <div className="font-mono text-slate-200 text-sm">
+                          {booking.scheduledDeparture}
                         </div>
-                      ) : null}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="text-slate-500 font-bold uppercase text-[10px]">
+                          Operational Timing
+                        </div>
+                        {booking.status === 'Delayed' ? (
+                          <div className="font-mono font-bold text-amber-300 text-sm">
+                            {booking.newDeparture} (+{booking.delayHours}h Delay)
+                          </div>
+                        ) : booking.status === 'Cancelled' ? (
+                          <div className="font-medium text-rose-300 text-sm">
+                            Flight Cancelled
+                          </div>
+                        ) : (
+                          <div className="font-medium text-emerald-400 text-sm">
+                            On Schedule
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Disruption detail notice */}
+                    {booking.status === 'Cancelled' ? (
+                      <div className="flex items-center gap-2 rounded-lg bg-rose-500/10 border border-rose-500/20 p-2.5 text-xs text-rose-300">
+                        <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                        <span>Reason: {booking.cancellationReason}</span>
+                      </div>
+                    ) : null}
+
+                    {booking.status === 'Delayed' ? (
+                      <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-amber-300">
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+                        <span>Delay: {booking.delayHours} hours behind scheduled departure</span>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
             </Card>
-
-            <p className="text-xs text-ops-faint">
-              Tip: open{' '}
-              <Link
-                to={`/agent?pnr=${data.pnr}`}
-                className="text-ops-accent hover:underline"
-              >
-                Customer Agent
-              </Link>{' '}
-              pre-loaded with PNR {data.pnr} to handle this customer's
-              disruption.
-            </p>
           </div>
         </div>
       ) : null}
     </div>
   );
 }
+

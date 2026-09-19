@@ -1,32 +1,35 @@
 @import "tailwindcss";
 
 /*
- * Dark airline operations theme.
- * Charcoal/matte surfaces, subtle borders, restrained accents.
- * No global animations by design — the dashboard stays calm.
+ * AeroResolve — Next-Gen Airline Operations & Resolution Theme
+ * High-contrast aerospace dark cockpit aesthetic with luminous telemetry accents,
+ * glassmorphic surfaces, and responsive micro-animations.
  */
 @theme {
-  /* Surfaces (charcoal / matte) */
-  --color-ops-950: #0b0e13; /* page background */
-  --color-ops-900: #11151c; /* sidebar / header */
-  --color-ops-850: #161b24; /* card background */
-  --color-ops-800: #1c222d; /* elevated / hover */
-  --color-ops-700: #2a323f; /* borders strong */
+  /* Surfaces (deep aerospace night & cockpit consoles) */
+  --color-ops-950: #070a0f; /* base canvas */
+  --color-ops-900: #0d121c; /* sidebar / sticky headers */
+  --color-ops-850: #121926; /* primary card backdrop */
+  --color-ops-800: #182234; /* elevated hover / active surfaces */
+  --color-ops-750: #1f2c44; /* interactive inputs / controls */
+  --color-ops-700: #293a5a; /* prominent structural borders */
 
-  /* Borders (subtle) */
-  --color-ops-line: #232a35;
+  /* Borders & Gradients */
+  --color-ops-line: #1e293b;
+  --color-ops-line-glow: rgba(56, 189, 248, 0.2);
 
-  /* Text */
-  --color-ops-text: #e6e9ee;
-  --color-ops-muted: #8b94a3;
-  --color-ops-faint: #5d6674;
+  /* Typography */
+  --color-ops-text: #f8fafc;
+  --color-ops-muted: #94a3b8;
+  --color-ops-faint: #64748b;
 
-  /* Accents */
-  --color-ops-accent: #3b82f6; /* primary blue */
-  --color-ops-ok: #22c55e; /* eligible / completed */
-  --color-ops-warn: #f59e0b; /* delayed / medium */
-  --color-ops-bad: #ef4444; /* cancelled / high */
-  --color-ops-escalate: #a855f7; /* escalation */
+  /* Flight Ops Telemetry Accents */
+  --color-ops-accent: #0284c7; /* flight blue */
+  --color-ops-cyan: #38bdf8; /* luminous radar cyan */
+  --color-ops-ok: #10b981; /* clear / on-time / eligible */
+  --color-ops-warn: #f59e0b; /* delay / caution */
+  --color-ops-bad: #f43f5e; /* cancelled / prohibited */
+  --color-ops-escalate: #a855f7; /* VIP / supervisor escalation */
 }
 
 html,
@@ -36,13 +39,109 @@ body,
 }
 
 body {
-  @apply bg-ops-950 text-ops-text antialiased;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--color-ops-950);
+  color: var(--color-ops-text);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(14, 165, 233, 0.08), transparent 70%),
+    radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.04), transparent 50%);
+  background-attachment: fixed;
 }
 
-/* Thin, unobtrusive scrollbars to match the ops aesthetic */
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Custom Scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-ops-700) transparent;
+  scrollbar-color: rgba(56, 189, 248, 0.2) transparent;
 }
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.2);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.4);
+}
+
+/* Aerospace Glassmorphic & Glow Utilities */
+.glass-panel {
+  background: rgba(18, 25, 38, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-glow {
+  background: rgba(18, 25, 38, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  box-shadow: 0 0 25px -5px rgba(14, 165, 233, 0.15), 0 8px 30px -4px rgba(0, 0, 0, 0.6);
+}
+
+.glow-cyan {
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.5));
+}
+
+.glow-emerald {
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
+}
+
+.glow-amber {
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
+}
+
+.glow-rose {
+  filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.5));
+}
+
+/* Animations */
+@keyframes radarPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(56, 189, 248, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+  }
+}
+
+.animate-radar-ping {
+  animation: radarPulse 2.5s infinite;
+}
+
+@keyframes flightDash {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.flight-path-animated {
+  stroke-dasharray: 6 6;
+  animation: flightDash 1.5s linear infinite;
+}
+

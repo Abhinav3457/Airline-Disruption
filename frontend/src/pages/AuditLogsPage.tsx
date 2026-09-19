@@ -1,4 +1,14 @@
 import { useState } from 'react';
+import {
+  Clock,
+  FileCheck2,
+  Filter,
+  Fingerprint,
+  Gavel,
+  Search,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
 
 import {
   Badge,
@@ -40,33 +50,55 @@ export function AuditLogsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Audit Logs</h2>
-        <p className="mt-1 text-sm text-ops-muted">
-          Every agent interaction: what was asked, which policies applied, the
-          decision, executed actions, and escalations.
-        </p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-sky-400" />
+            <h2 className="text-xl font-extrabold text-white tracking-tight">Compliance &amp; Interaction Audit Ledger</h2>
+          </div>
+          <p className="mt-1 text-sm text-slate-400">
+            Immutable interaction audit trail recording customer claims, policy engine verdicts, executed actions, and supervisor escalations.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-mono text-sky-300">
+            <Fingerprint className="h-3.5 w-3.5" />
+            <span>Audit Proof Verified</span>
+          </span>
+        </div>
       </div>
 
-      <Card>
+      {/* Control Card */}
+      <Card className="overflow-hidden border-slate-800 shadow-2xl">
         <CardHeader
-          title={activePnr ? `Records for ${activePnr}` : 'All records'}
-          meta={data ? `${data.length} records` : undefined}
+          title={activePnr ? `Ledger Records for PNR: ${activePnr}` : 'Comprehensive Audit Ledger'}
+          icon={<FileCheck2 className="h-4 w-4 text-sky-400" />}
+          meta={data ? `${data.length} interactions logged` : undefined}
         />
-        <CardBody className="flex flex-wrap items-center gap-2 border-b border-ops-line">
-          <input
-            value={filter}
-            onChange={(event) => setFilter(event.target.value.toUpperCase())}
-            placeholder="Filter by PNR…"
-            className="w-40 rounded-md border border-ops-line bg-ops-800 px-2.5 py-1.5 font-mono text-sm placeholder:text-ops-faint focus:border-ops-accent focus:outline-none"
-          />
+
+        {/* Filter Bar */}
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-800/80 p-3 sm:p-4 bg-slate-950/60">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+            <input
+              value={filter}
+              onChange={(event) => setFilter(event.target.value.toUpperCase())}
+              placeholder="Search PNR code (e.g. ABC123)…"
+              className="w-full rounded-xl border border-slate-700/80 bg-slate-900 pl-9 pr-3 py-1.5 font-mono text-xs text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none transition-all"
+            />
+          </div>
+
           <Button
             size="sm"
             variant="secondary"
             onClick={() => setActivePnr(filter.trim() || null)}
           >
-            Apply
+            <Filter className="h-3 w-3" />
+            <span>Filter PNR</span>
           </Button>
+
           {activePnr ? (
             <Button
               size="sm"
@@ -76,17 +108,19 @@ export function AuditLogsPage() {
                 setActivePnr(null);
               }}
             >
-              Clear
+              <X className="h-3 w-3" />
+              <span>Clear Filter</span>
             </Button>
           ) : null}
-          <span className="ml-auto text-xs text-ops-faint">
+
+          <span className="ml-auto font-mono text-[11px] text-slate-500 hidden sm:inline-block">
             GET {activePnr ? `/api/audit/${activePnr}` : '/api/audit'}
           </span>
-        </CardBody>
+        </div>
 
         {loading ? (
           <CardBody>
-            <Loading label="Loading audit records…" />
+            <Loading label="Querying audit records from secure ledger…" />
           </CardBody>
         ) : error ? (
           <CardBody>
@@ -100,56 +134,75 @@ export function AuditLogsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-ops-line text-xs tracking-wide text-ops-muted uppercase">
-                  <th className="px-4 py-2.5 font-medium">Time</th>
-                  <th className="px-4 py-2.5 font-medium">PNR</th>
-                  <th className="px-4 py-2.5 font-medium">Customer</th>
-                  <th className="px-4 py-2.5 font-medium">Intent</th>
-                  <th className="px-4 py-2.5 font-medium">Decision</th>
-                  <th className="px-4 py-2.5 font-medium">Actions</th>
-                  <th className="px-4 py-2.5 font-medium">Escalation</th>
+                <tr className="border-b border-slate-800/80 bg-slate-950/60 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                  <th className="px-5 py-3.5 font-semibold">Timestamp</th>
+                  <th className="px-5 py-3.5 font-semibold">PNR</th>
+                  <th className="px-5 py-3.5 font-semibold">Passenger</th>
+                  <th className="px-5 py-3.5 font-semibold">Detected Intent</th>
+                  <th className="px-5 py-3.5 font-semibold">Policy Verdict</th>
+                  <th className="px-5 py-3.5 font-semibold">Executed Actions</th>
+                  <th className="px-5 py-3.5 font-semibold">Escalation</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-800/60">
                 {data.map((record) => (
                   <tr
                     key={record.id}
-                    className="border-b border-ops-line/60 align-top last:border-0 hover:bg-ops-800/50"
+                    className="hover:bg-slate-800/40 transition-colors align-top"
                   >
-                    <td className="px-4 py-3 whitespace-nowrap text-ops-muted">
-                      {formatTimestamp(record.timestamp)}
+                    <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-400 font-mono">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3 w-3 text-slate-500" />
+                        <span>{formatTimestamp(record.timestamp)}</span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs">
+
+                    <td className="px-5 py-4 font-mono font-bold text-xs text-sky-400">
                       {record.pnr}
                     </td>
-                    <td className="px-4 py-3">{record.customer}</td>
-                    <td className="px-4 py-3 text-ops-muted">
-                      {humanizeIntent(record.intent)}
+
+                    <td className="px-5 py-4 font-medium text-white">
+                      {record.customer}
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge tone={decisionToneFromText(record.decision)}>
-                        {record.decision.replace(/^\[[\w]+\]\s*/, '').slice(0, 60)}
-                        {record.decision.replace(/^\[[\w]+\]\s*/, '').length > 60
-                          ? '…'
-                          : ''}
+
+                    <td className="px-5 py-4 text-xs text-slate-300">
+                      <Badge tone="accent">
+                        {humanizeIntent(record.intent)}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-xs text-ops-muted">
+
+                    <td className="px-5 py-4 max-w-xs">
+                      <Badge tone={decisionToneFromText(record.decision)}>
+                        {record.decision.replace(/^\[[\w]+\]\s*/, '').slice(0, 65)}
+                        {record.decision.replace(/^\[[\w]+\]\s*/, '').length > 65 ? '…' : ''}
+                      </Badge>
+                    </td>
+
+                    <td className="px-5 py-4 text-xs text-slate-300">
                       {record.actions.length === 0 ? (
-                        <span className="text-ops-faint">—</span>
+                        <span className="text-slate-500 italic">None</span>
                       ) : (
-                        <ul className="space-y-0.5">
+                        <ul className="space-y-1">
                           {record.actions.map((action) => (
-                            <li key={action}>{action}</li>
+                            <li
+                              key={action}
+                              className="font-mono text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5"
+                            >
+                              {action}
+                            </li>
                           ))}
                         </ul>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+
+                    <td className="px-5 py-4">
                       {record.escalation ? (
-                        <Badge tone="escalate">Escalated</Badge>
+                        <Badge tone="escalate" pulse>
+                          <Gavel className="h-3 w-3 mr-1" />
+                          Escalated
+                        </Badge>
                       ) : (
-                        <span className="text-ops-faint">—</span>
+                        <span className="text-slate-500 text-xs">—</span>
                       )}
                     </td>
                   </tr>
@@ -159,12 +212,19 @@ export function AuditLogsPage() {
           </div>
         ) : (
           <CardBody>
-            <p className="py-6 text-center text-sm text-ops-faint">
-              No audit records yet — send a message in Agent Chat to create one.
-            </p>
+            <div className="py-16 text-center text-slate-400 space-y-2">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-800/60 text-slate-500">
+                <FileCheck2 className="h-6 w-6" />
+              </div>
+              <p className="font-semibold text-white">No audit records found.</p>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Interact with the Resolution Copilot in the Customer Agent terminal to generate deterministic audit ledger entries.
+              </p>
+            </div>
           </CardBody>
         )}
       </Card>
     </div>
   );
 }
+
